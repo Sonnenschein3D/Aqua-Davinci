@@ -311,6 +311,14 @@ export class Toolbar {
         btnFocus.onclick = () => this.eventBus.emit('ui-focus-clicked', null);
         this.bottomToolbar.appendChild(btnFocus);
 
+        // F12 Debug Console Button (for tablets without a physical F12 key)
+        const btnF12 = document.createElement('button');
+        btnF12.innerText = "F12";
+        btnF12.title = "Debug-Konsole öffnen";
+        btnF12.style.cssText = "height: 25px; padding: 0 8px; background: #444; color: white; border: 1px solid #555; font-size: 11px; cursor: pointer; border-radius: 3px;";
+        btnF12.onclick = () => this.eventBus.emit('toggle-debug-console', null);
+        this.bottomToolbar.appendChild(btnF12);
+
 
         // --- HIDDEN FILE INPUTS ---
         this.imageFileInput = document.createElement('input'); // For background image

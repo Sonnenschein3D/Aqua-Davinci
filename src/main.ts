@@ -514,3 +514,7 @@ window.addEventListener('keydown', (e: KeyboardEvent) => {
         eruda.show();
     }
 });
+
+eventBus.on('toggle-debug-console', () => {
+    eruda.show();
+});
