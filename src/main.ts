@@ -1,4 +1,5 @@
 import './style.css'
+import eruda from 'eruda';
 import * as THREE from 'three';
 import { EventBus } from './core/EventBus';
 import { ViewManager } from './managers/ViewManager';
@@ -500,3 +501,16 @@ const uiManager = new UIManager(eventBus, objectManager, viewManager, modifierMa
 };
 
 console.log('Konstruktion app started (Modular Rebuild Fixed)');
+
+// --- Debug Console (Eruda) ---
+// Eruda bietet eine eingebettete Entwicklerkonsole im Browser.
+// Öffnen/Schließen: F12-Taste drücken.
+eruda.init();
+eruda.hide(); // Startet verborgen, F12 öffnet die Konsole
+
+window.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'F12') {
+        e.preventDefault();
+        eruda.show();
+    }
+});
