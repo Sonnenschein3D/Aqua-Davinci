@@ -2,8 +2,10 @@ import './style.css'
 import * as THREE from 'three';
 
 // Initialize Eruda mobile console
-declare const eruda: { init: () => void };
-eruda.init();
+declare const eruda: { init: () => void } | undefined;
+if (typeof eruda !== 'undefined') {
+  eruda.init();
+}
 
 import { EventBus } from './core/EventBus';
 import { ViewManager } from './managers/ViewManager';
