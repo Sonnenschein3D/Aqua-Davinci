@@ -75,7 +75,7 @@ export class Toolbar {
             display: 'flex',
             alignItems: 'center',
             gap: '15px',
-            background: '#222',
+            background: 'yellow',
             padding: '0 10px',
             borderTop: '1px solid #444',
             zIndex: '3000',
