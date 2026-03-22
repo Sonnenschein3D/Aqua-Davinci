@@ -70,7 +70,7 @@ export class Toolbar {
             position: 'absolute',
             bottom: '0',
             left: '0',
-            width: '100%',
+            width: 'calc(100% - 150px)',
             height: '40px',
             display: 'flex',
             alignItems: 'center',

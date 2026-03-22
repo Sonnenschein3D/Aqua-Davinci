@@ -40,7 +40,7 @@ export class PropertiesPanel {
             top: '40px', 
             right: '0',
             width: '150px', 
-            height: 'calc(100% - 70px)', 
+            height: 'calc(100% - 40px)', 
             background: '#222', 
             color: 'white',
             padding: '10px',
