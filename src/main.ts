@@ -508,6 +508,13 @@ console.log('Konstruktion app started (Modular Rebuild Fixed)');
 eruda.init();
 eruda.hide(); // Startet verborgen, F12 öffnet die Konsole
 
+// Eruda's eigenen Toggle-Button verstecken – wir nutzen unseren eigenen F12-Button
+const erudaEl = document.getElementById('eruda');
+if (erudaEl && erudaEl.shadowRoot) {
+    const entryBtn = erudaEl.shadowRoot.querySelector('.eruda-entry-btn') as HTMLElement | null;
+    if (entryBtn) entryBtn.style.display = 'none';
+}
+
 window.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'F12') {
         e.preventDefault();

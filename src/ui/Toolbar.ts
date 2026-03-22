@@ -71,7 +71,7 @@ export class Toolbar {
             bottom: '0',
             left: '0',
             width: '100%',
-            height: '30px',
+            height: '40px',
             display: 'flex',
             alignItems: 'center',
             gap: '15px',
@@ -307,7 +307,7 @@ export class Toolbar {
         const btnFocus = document.createElement('button');
         btnFocus.innerHTML = "⌖";
         btnFocus.title = "Ansicht zentrieren";
-        btnFocus.style.cssText = "width: 25px; height: 25px; background: #444; color: white; border: 1px solid #555; padding: 0; font-size: 16px; cursor: pointer; border-radius: 3px; display: flex; align-items: center; justify-content: center;";
+        btnFocus.style.cssText = "width: 34px; height: 34px; background: #444; color: white; border: 1px solid #555; padding: 0; font-size: 20px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center;";
         btnFocus.onclick = () => this.eventBus.emit('ui-focus-clicked', null);
         this.bottomToolbar.appendChild(btnFocus);
 
@@ -315,7 +315,7 @@ export class Toolbar {
         const btnF12 = document.createElement('button');
         btnF12.innerText = "F12";
         btnF12.title = "Debug-Konsole öffnen";
-        btnF12.style.cssText = "height: 25px; padding: 0 8px; background: #444; color: white; border: 1px solid #555; font-size: 11px; cursor: pointer; border-radius: 3px;";
+        btnF12.style.cssText = "height: 34px; padding: 0 16px; background: #1a6ea8; color: white; border: 1px solid #2a8ed0; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 4px; letter-spacing: 1px;";
         btnF12.onclick = () => this.eventBus.emit('toggle-debug-console', null);
         this.bottomToolbar.appendChild(btnF12);
 
