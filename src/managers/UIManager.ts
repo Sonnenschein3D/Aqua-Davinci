@@ -9,12 +9,13 @@ import { ModifierManager } from './ModifierManager';
 export class UIManager {
     private eventBus: EventBus;
     private viewManager: ViewManager;
+    private toolbar: Toolbar;
 
     constructor(eventBus: EventBus, objectManager: ObjectManager, viewManager: ViewManager, modifierManager: ModifierManager, scene: THREE.Scene) {
         this.eventBus = eventBus;
         this.viewManager = viewManager;
         
-        new Toolbar(eventBus);
+        this.toolbar = new Toolbar(eventBus);
         new PropertiesPanel(eventBus, modifierManager, objectManager, scene);
         
         this.initUIListeners();
@@ -32,6 +33,12 @@ export class UIManager {
 
     private initKeyboardShortcuts() {
         window.addEventListener('keydown', (event) => {
+            if (event.key === 'F12') {
+                event.preventDefault();
+                this.toolbar.debugConsole.toggle();
+                return;
+            }
+
             const target = event.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
 

@@ -1,5 +1,6 @@
 import { EventBus } from '../core/EventBus';
 import * as THREE from 'three'; // Needed for Image() texture loading
+import { DebugConsole } from './DebugConsole';
 
 declare global {
     interface Window {
@@ -16,9 +17,12 @@ export class Toolbar {
     private imageFileInput!: HTMLInputElement; // Renamed to avoid confusion
     private projectFileInput!: HTMLInputElement;
     private projectNameDisplay!: HTMLElement;
+    readonly debugConsole: DebugConsole;
 
             constructor(eventBus: EventBus) {
-                this.eventBus = eventBus;        this.createToolbars();
+                this.eventBus = eventBus;
+                this.debugConsole = new DebugConsole();
+                this.createToolbars();
         this.initListeners();
         // Request initial name
         setTimeout(() => this.eventBus.emit('request-project-name', null), 100);
@@ -301,10 +305,10 @@ export class Toolbar {
         // F12 button (DevTools)
         const btnF12 = document.createElement('button');
         btnF12.innerHTML = "F12";
-        btnF12.title = "Browser-Konsole öffnen (DevTools)";
+        btnF12.title = "Debug-Konsole öffnen/schließen";
         btnF12.style.cssText = "height: 22px; background: #333; color: #aaa; border: 1px solid #555; padding: 0 8px; font-size: 11px; cursor: pointer; border-radius: 3px;";
         btnF12.onclick = () => {
-            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F12', keyCode: 123, bubbles: true }));
+            this.debugConsole.toggle();
         };
         this.bottomToolbar.appendChild(btnF12);
 
