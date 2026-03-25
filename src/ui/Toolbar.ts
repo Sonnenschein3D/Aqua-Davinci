@@ -297,7 +297,17 @@ export class Toolbar {
 
 
         // --- BOTTOM TOOLBAR CONTENT ---
-        
+
+        // F12 button (DevTools)
+        const btnF12 = document.createElement('button');
+        btnF12.innerHTML = "F12";
+        btnF12.title = "Browser-Konsole öffnen (DevTools)";
+        btnF12.style.cssText = "height: 22px; background: #333; color: #aaa; border: 1px solid #555; padding: 0 8px; font-size: 11px; cursor: pointer; border-radius: 3px;";
+        btnF12.onclick = () => {
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'F12', keyCode: 123, bubbles: true }));
+        };
+        this.bottomToolbar.appendChild(btnF12);
+
         // Spacer to push right
         const spacerBottom = document.createElement('div');
         spacerBottom.style.flexGrow = '1';
