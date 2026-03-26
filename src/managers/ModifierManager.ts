@@ -140,30 +140,53 @@ export class ModifierManager {
                 if(shape){
                     const g = new THREE.ExtrudeGeometry(shape, { depth: extrudeMod.params.height, bevelEnabled: false });
                     g.rotateX(-Math.PI / 2);
-                    
-                    const tempGroup = new THREE.Group();
-                    // Pass material params to temp group so MeshConverter picks them up
-                    tempGroup.userData.materialParams = object.userData.materialParams;
-                    
-                    const baseMesh = new THREE.Mesh(g); // mergeVertices removed to avoid vertex sharing
-                    tempGroup.add(baseMesh);
-    
-                    const finalMesh = createMesh(tempGroup) as THREE.Mesh;
-                     if (finalMesh) {
-                        this.setOriginalVisibility(object, false);
+
+                    const isWireframe = matParams?.wireframe === true;
+                    const extrudeOpacity = matParams?.opacity !== undefined ? matParams.opacity : 1;
+                    const isTransparent = extrudeOpacity < 1;
+
+                    const makeMaterial = (side: THREE.Side) => new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(matParams?.color || 0xcccccc),
+                        side,
+                        roughness: matParams?.roughness !== undefined ? matParams.roughness : 0.5,
+                        metalness: matParams?.metalness !== undefined ? matParams.metalness : 0.1,
+                        wireframe: isWireframe,
+                        opacity: extrudeOpacity,
+                        transparent: isTransparent,
+                        depthWrite: !isTransparent,
+                        flatShading: matParams?.flatShading !== undefined ? matParams.flatShading : false
+                    });
+
+                    this.setOriginalVisibility(object, false);
+
+                    if (isTransparent) {
+                        // Two-pass rendering: back faces first, then front faces.
+                        // This ensures the lid (top cap) is always visible regardless of camera angle.
+                        const backMesh = new THREE.Mesh(g, makeMaterial(THREE.BackSide));
+                        backMesh.userData.isGeneratedVisual = true;
+                        backMesh.renderOrder = 0;
+                        object.add(backMesh);
+
+                        const frontMesh = new THREE.Mesh(g, makeMaterial(THREE.FrontSide));
+                        frontMesh.userData.isGeneratedVisual = true;
+                        frontMesh.renderOrder = 1;
+                        object.add(frontMesh);
+                    } else {
+                        // Single-pass for fully opaque body: FrontSide only -> solid closed body, no see-through.
+                        const finalMesh = new THREE.Mesh(g, makeMaterial(THREE.FrontSide));
                         finalMesh.userData.isGeneratedVisual = true;
                         object.add(finalMesh);
-    
-                        // Add Edges Overlay for "Solid + Wire" look
-                        if (matParams && !matParams.wireframe) {
-                            const edges = new THREE.EdgesGeometry(finalMesh.geometry);
-                            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
-                            line.userData.isGeneratedVisual = true;
-                            object.add(line);
-                        }
-    
-                        object.userData.openEdgeCount = finalMesh.userData.openEdgeCount; // Loch-Anzahl übertragen
                     }
+
+                    // Add Edges Overlay for "Solid + Wire" look
+                    if (matParams && !matParams.wireframe) {
+                        const edges = new THREE.EdgesGeometry(g);
+                        const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
+                        line.userData.isGeneratedVisual = true;
+                        object.add(line);
+                    }
+
+                    object.userData.openEdgeCount = MeshConverter.mergeAndCountHoles(g);
                 }
     
                     } else if (latheMod) {
