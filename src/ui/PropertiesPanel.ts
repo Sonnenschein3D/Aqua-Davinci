@@ -679,10 +679,10 @@ export class PropertiesPanel {
         solidRow.appendChild(solidCheck); solidRow.appendChild(solidLabel);
         container.appendChild(solidRow);
 
-        // Transparency (0 = opaque, 1 = fully transparent)
+        // Deckkraft (0 = fully transparent, 1 = fully opaque) – consistent with brush Deckkraft
         if (params.opacity === undefined) params.opacity = 1;
-        new SpinCtrl(container, 'Transparenz', 1 - params.opacity, 0.1, (val) => {
-            params.opacity = 1 - Math.max(0, Math.min(1, val));
+        new SpinCtrl(container, 'Deckkraft', params.opacity, 0.1, (val) => {
+            params.opacity = Math.max(0, Math.min(1, val));
             this.eventBus.emit('update-object-geometry', obj);
         }, 0, 1);
 
