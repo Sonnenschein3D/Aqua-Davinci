@@ -11,10 +11,6 @@ export class ModifierManager {
         this.eventBus.on('object-added', (obj: THREE.Object3D) => {
             setTimeout(() => this.applyModifiers(obj), 10);
         });
-        
-        this.eventBus.on('convert-to-mesh', (obj: THREE.Object3D) => {
-            this.addModifier(obj, 'mesh_convert');
-        });
     }
 
     public addModifier(object: THREE.Object3D, type: string) {
@@ -23,9 +19,7 @@ export class ModifierManager {
         if (object.userData.modifiers.find((m: any) => m.type === type)) return;
 
         let params = {};
-        if (type === 'extrude') params = { height: 50 };
-        else if (type === 'lathe') params = { segments: 32, phiStart: 0, phiLength: Math.PI * 2 };
-        else if (type === 'face_delete') params = { faces: [] };
+        if (type === 'lathe') params = { segments: 32, phiStart: 0, phiLength: Math.PI * 2 };
         
         object.userData.modifiers.push({ type, name: this.getModifierName(type), params, active: true });
         this.applyModifiers(object);
@@ -34,10 +28,7 @@ export class ModifierManager {
 
     private getModifierName(type: string): string {
         switch (type) {
-            case 'extrude': return 'Extrudieren';
             case 'lathe': return 'Rotation';
-            case 'mesh_convert': return 'In Mesh umwandeln';
-            case 'face_delete': return 'Flächen entfernen';
             default: return 'Unbekannter Modifikator';
         }
     }
@@ -58,274 +49,81 @@ export class ModifierManager {
         }
     }
 
-        private applyModifiers(object: THREE.Object3D) {
-            this.cleanup(object);
-            
-            const modifiers = object.userData.modifiers || [];
-            const extrudeMod = modifiers.find((m: any) => m.type === 'extrude' && m.active);
-            const latheMod = modifiers.find((m: any) => m.type === 'lathe' && m.active);
-            let meshMod = modifiers.find((m: any) => m.type === 'mesh_convert' && m.active);
-    
-            // Update 2D Shape color
-            const matParams = object.userData.materialParams;
-            if (matParams && matParams.color) {
-                const color = new THREE.Color(matParams.color);
-                object.children.forEach(c => {
-                    if (c.userData.type === 'bezier_line') {
-                        const curveMesh = c.children.find(cc => cc.userData.isCurve) as THREE.Line;
-                        if (curveMesh && curveMesh.material) {
-                            (curveMesh.material as THREE.LineBasicMaterial).color.copy(color);
-                        }
+    private applyModifiers(object: THREE.Object3D) {
+        this.cleanup(object);
+
+        const modifiers = object.userData.modifiers || [];
+        const latheMod = modifiers.find((m: any) => m.type === 'lathe' && m.active);
+
+        // Update 2D Shape color
+        const matParams = object.userData.materialParams;
+        if (matParams && matParams.color) {
+            const color = new THREE.Color(matParams.color);
+            object.children.forEach(c => {
+                if (c.userData.type === 'bezier_line') {
+                    const curveMesh = c.children.find(cc => cc.userData.isCurve) as THREE.Line;
+                    if (curveMesh && curveMesh.material) {
+                        (curveMesh.material as THREE.LineBasicMaterial).color.copy(color);
                     }
+                }
+            });
+        }
+
+        // Boolean results are static unless they have modifiers added manually afterwards
+        if (object.userData.type === 'boolean_result' && modifiers.length === 0) return;
+
+        if (latheMod) {
+            const points = this.getPointsForLathe(object);
+            if (points.length > 1) {
+                const g = new THREE.LatheGeometry(points, latheMod.params.segments, latheMod.params.phiStart, latheMod.params.phiLength);
+                const isWireframe = matParams?.wireframe === true;
+                const latheOpacity = matParams?.opacity !== undefined ? matParams.opacity : 1;
+                const material = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(matParams?.color || 0xcccccc),
+                    side: THREE.DoubleSide,
+                    roughness: matParams?.roughness || 0.5,
+                    metalness: matParams?.metalness || 0.1,
+                    wireframe: isWireframe,
+                    opacity: latheOpacity,
+                    transparent: latheOpacity < 1,
+                    depthWrite: latheOpacity >= 1
                 });
-            }
-    
-            // Boolean results are static unless they have modifiers added manually afterwards
-            if (object.userData.type === 'boolean_result' && modifiers.length === 0) return;
-    
-            // This function will contain the main logic for creating a mesh
-            const createMesh = (source: THREE.Object3D) => {
-                const converted = MeshConverter.convert(source);
-                if (converted) {
-                    // Now that we have a converted mesh, check for face deletion
-                    const faceDeleteMod = modifiers.find((m: any) => m.type === 'face_delete' && m.active);
-                    if (faceDeleteMod && (faceDeleteMod.params.faces as THREE.Vector3[]).length > 0) {
-                        const geo = (converted as THREE.Mesh).geometry;
-                        const facesToDeleteIndices = new Set<number>();
-                        const storedCentroids = faceDeleteMod.params.faces as THREE.Vector3[];
-    
-                        if (geo.index) {
-                            // Find face indices matching stored centroids
-                            for (let i = 0; i < geo.index.count / 3; i++) {
-                                const currentFaceCentroid = ModifierManager._getFaceCentroid(geo, i);
-                                if (currentFaceCentroid) {
-                                    for (const storedCentroid of storedCentroids) {
-                                        if (storedCentroid.distanceTo(currentFaceCentroid) < 0.01) { // Tolerance for centroid comparison
-                                            facesToDeleteIndices.add(i);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-    
-                            const newIndices = [];
-                            for (let i = 0; i < geo.index.count; i += 3) {
-                                const faceIndex = i / 3;
-                                if (!facesToDeleteIndices.has(faceIndex)) {
-                                    newIndices.push(geo.index.getX(i), geo.index.getY(i), geo.index.getZ(i));
-                                }
-                            }
-                            const newGeo = new THREE.BufferGeometry();
-                            newGeo.setAttribute('position', geo.attributes.position);
-                            if (geo.attributes.normal) newGeo.setAttribute('normal', geo.attributes.normal);
-                            if (geo.attributes.uv) newGeo.setAttribute('uv', geo.attributes.uv);
-                            newGeo.setIndex(newIndices);
-                            (converted as THREE.Mesh).geometry.dispose();
-                            (converted as THREE.Mesh).geometry = newGeo;
-                            
-                            // Force update
-                            (converted as THREE.Mesh).geometry.attributes.position.needsUpdate = true;
-                            if ((converted as THREE.Mesh).geometry.attributes.normal) (converted as THREE.Mesh).geometry.attributes.normal.needsUpdate = true;
-                            if ((converted as THREE.Mesh).geometry.attributes.uv) (converted as THREE.Mesh).geometry.attributes.uv.needsUpdate = true;
-                            if ((converted as THREE.Mesh).geometry.index) { (converted as THREE.Mesh).geometry.index!.needsUpdate = true; } // Use non-null assertion
-                            ((converted as THREE.Mesh).material as THREE.Material).needsUpdate = true; // Material needs update
-                        }
-                    }
-                }
-                return converted;
-            };
-    
-            if (extrudeMod) {
-                const shape = this.getShape(object);
-                if(shape){
-                    const g = new THREE.ExtrudeGeometry(shape, { depth: extrudeMod.params.height, bevelEnabled: false });
-                    g.rotateX(-Math.PI / 2);
-                    
-                    const tempGroup = new THREE.Group();
-                    // Pass material params to temp group so MeshConverter picks them up
-                    tempGroup.userData.materialParams = object.userData.materialParams;
-                    
-                    const baseMesh = new THREE.Mesh(g); // mergeVertices removed to avoid vertex sharing
-                    tempGroup.add(baseMesh);
-    
-                    const finalMesh = createMesh(tempGroup) as THREE.Mesh;
-                     if (finalMesh) {
-                        this.setOriginalVisibility(object, false);
-                        finalMesh.userData.isGeneratedVisual = true;
-                        object.add(finalMesh);
-    
-                        // Add Edges Overlay for "Solid + Wire" look
-                        if (matParams && !matParams.wireframe) {
-                            const edges = new THREE.EdgesGeometry(finalMesh.geometry);
-                            const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
-                            line.userData.isGeneratedVisual = true;
-                            object.add(line);
-                        }
-    
-                        object.userData.openEdgeCount = finalMesh.userData.openEdgeCount; // Loch-Anzahl übertragen
-                    }
-                }
-    
-                    } else if (latheMod) {
-    
-                        const points = this.getPointsForLathe(object);
-    
-                        if (points.length > 1) {
-    
-                            const g = new THREE.LatheGeometry(points, latheMod.params.segments, latheMod.params.phiStart, latheMod.params.phiLength);
-    
-                            
-    
-                            const isWireframe = matParams?.wireframe === true;
-    
-                            const latheOpacity = matParams?.opacity !== undefined ? matParams.opacity : 1;
-    
-                            const material = new THREE.MeshStandardMaterial({
-
-                                color: new THREE.Color(matParams?.color || 0xcccccc),
-
-                                side: THREE.DoubleSide,
-
-                                roughness: matParams?.roughness || 0.5,
-
-                                metalness: matParams?.metalness || 0.1,
-
-                                wireframe: isWireframe,
-
-                                opacity: latheOpacity,
-
-                                transparent: latheOpacity < 1,
-
-                                depthWrite: latheOpacity >= 1
-
-                            });
-    
-            
-    
-                            const finalMesh = new THREE.Mesh(g, material);
-    
-                            finalMesh.userData.isGeneratedVisual = true;
-    
-                            this.setOriginalVisibility(object, false);
-    
-                            object.add(finalMesh);
-    
-            
-    
-                            // Add Edges Overlay only for "Solid" look (NOT in wireframe mode)
-    
-                            if (matParams && !matParams.wireframe) {
-    
-                                const edges = new THREE.EdgesGeometry(finalMesh.geometry);
-    
-                                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
-    
-                                line.userData.isGeneratedVisual = true;
-    
-                                object.add(line);
-    
-                            }
-    
-                            
-    
-                            object.userData.openEdgeCount = MeshConverter.countHoles(g);
-    
-                        }
-    
-                    } else if (meshMod) {            const finalMesh = createMesh(object) as THREE.Mesh;
-            if (finalMesh) {
-                this.setOriginalVisibility(object, false);
+                const finalMesh = new THREE.Mesh(g, material);
                 finalMesh.userData.isGeneratedVisual = true;
+                this.setOriginalVisibility(object, false);
                 object.add(finalMesh);
-
-                // Add Edges Overlay for "Solid + Wire" look
+                // Add Edges Overlay only for "Solid" look (NOT in wireframe mode)
                 if (matParams && !matParams.wireframe) {
                     const edges = new THREE.EdgesGeometry(finalMesh.geometry);
                     const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.3 }));
                     line.userData.isGeneratedVisual = true;
                     object.add(line);
                 }
-
-                object.userData.openEdgeCount = finalMesh.userData.openEdgeCount; // Loch-Anzahl übertragen
+                object.userData.openEdgeCount = MeshConverter.countHoles(g);
             }
         } else {
-            const faceDeleteMod = modifiers.find((m: any) => m.type === 'face_delete' && m.active);
-            if (faceDeleteMod) {
-                const existingMesh = object.children.find(c => c.userData.isMesh && !c.userData.isGeneratedVisual) as THREE.Mesh;
-                if(existingMesh) {
-                    const newGeo = existingMesh.geometry.clone();
-                    const facesToDeleteIndices = new Set<number>();
-                    const storedCentroids = faceDeleteMod.params.faces as THREE.Vector3[];
+            this.setOriginalVisibility(object, true);
+            object.userData.openEdgeCount = 0;
 
-                     if (newGeo.index) {
-                        // Find face indices matching stored centroids
-                        for (let i = 0; i < newGeo.index.count / 3; i++) {
-                            const currentFaceCentroid = ModifierManager._getFaceCentroid(newGeo, i);
-                            if (currentFaceCentroid) {
-                                for (const storedCentroid of storedCentroids) {
-                                    if (storedCentroid.distanceTo(currentFaceCentroid) < 0.01) {
-                                        facesToDeleteIndices.add(i);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-
-                        const newIndices = [];
-                        for (let i = 0; i < newGeo.index.count; i += 3) {
-                            const faceIndex = i / 3;
-                            if (!facesToDeleteIndices.has(faceIndex)) {
-                                newIndices.push(newGeo.index.getX(i), newGeo.index.getY(i), newGeo.index.getZ(i));
-                            }
-                        }
-                        newGeo.setIndex(newIndices);
-                        newGeo.computeVertexNormals();
-                        
-                        // Force update
-                        newGeo.attributes.position.needsUpdate = true;
-                        if (newGeo.attributes.normal) newGeo.attributes.normal.needsUpdate = true;
-                        if (newGeo.attributes.uv) newGeo.attributes.uv.needsUpdate = true;
-                        if (newGeo.index) { newGeo.index!.needsUpdate = true; } 
-                        (existingMesh.material as THREE.Material).needsUpdate = true; 
-                        
-                        const newMesh = new THREE.Mesh(newGeo, existingMesh.material);
-                        newMesh.userData.isGeneratedVisual = true;
-                        this.setOriginalVisibility(object, false);
-                        object.add(newMesh);
-                        
-                        // Loch-Analyse auch hier durchführen
-                        object.userData.openEdgeCount = MeshConverter.countHoles(newGeo);
-                    }
-                } else {
-                     this.setOriginalVisibility(object, true);
-                     object.userData.openEdgeCount = 0;
-                }
-            } else {
-                this.setOriginalVisibility(object, true);
-                object.userData.openEdgeCount = 0;
-
-                // --- 2D SOLID FILL LOGIC ---
-                // If not extruded but "Solid" is checked, show a filled 2D shape
-                if (matParams && !matParams.wireframe) {
-                    const shape = this.getShape(object);
-                    if (shape) {
-                        const geo = new THREE.ShapeGeometry(shape);
-                        geo.rotateX(-Math.PI / 2);
-                        
-                        const material = new THREE.MeshStandardMaterial({
-                            color: new THREE.Color(matParams.color || 0xcccccc),
-                            side: THREE.DoubleSide,
-                            roughness: matParams.roughness || 0.5,
-                            metalness: matParams.metalness || 0.1,
-                            polygonOffset: true,
-                            polygonOffsetFactor: 1,
-                            polygonOffsetUnits: 1
-                        });
-                        
-                        const fillMesh = new THREE.Mesh(geo, material);
-                        fillMesh.userData.isGeneratedVisual = true;
-                        object.add(fillMesh);
-                    }
+            // --- 2D SOLID FILL LOGIC ---
+            // If not extruded but "Solid" is checked, show a filled 2D shape
+            if (matParams && !matParams.wireframe) {
+                const shape = this.getShape(object);
+                if (shape) {
+                    const geo = new THREE.ShapeGeometry(shape);
+                    geo.rotateX(-Math.PI / 2);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(matParams.color || 0xcccccc),
+                        side: THREE.DoubleSide,
+                        roughness: matParams.roughness || 0.5,
+                        metalness: matParams.metalness || 0.1,
+                        polygonOffset: true,
+                        polygonOffsetFactor: 1,
+                        polygonOffsetUnits: 1
+                    });
+                    const fillMesh = new THREE.Mesh(geo, material);
+                    fillMesh.userData.isGeneratedVisual = true;
+                    object.add(fillMesh);
                 }
             }
         }
@@ -489,22 +287,6 @@ export class ModifierManager {
                 }
             }
         });
-    }
-
-    private static _getFaceCentroid(geometry: THREE.BufferGeometry, faceIndex: number): THREE.Vector3 | null {
-        const positionAttribute = geometry.attributes.position;
-        const indices = geometry.index ? geometry.index.array : null;
-        if (!indices) return null;
-
-        const vA = indices[faceIndex * 3];
-        const vB = indices[faceIndex * 3 + 1];
-        const vC = indices[faceIndex * 3 + 2];
-
-        const pA = new THREE.Vector3(positionAttribute.getX(vA), positionAttribute.getY(vA), positionAttribute.getZ(vA));
-        const pB = new THREE.Vector3(positionAttribute.getX(vB), positionAttribute.getY(vB), positionAttribute.getZ(vB));
-        const pC = new THREE.Vector3(positionAttribute.getX(vC), positionAttribute.getY(vC), positionAttribute.getZ(vC));
-
-        return pA.add(pB).add(pC).divideScalar(3);
     }
 
 }
