@@ -132,7 +132,6 @@ export class Toolbar {
 
         // 2. Select Button
         this.addButton('select', '➤', 'Selektieren (V)', this.topToolbar);
-        this.addButton('face_select', '⬚', 'Flächen auswählen', this.topToolbar);
 
         // 3. Snap Button
         const snapBtn = document.createElement('button');

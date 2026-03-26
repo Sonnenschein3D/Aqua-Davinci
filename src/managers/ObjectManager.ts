@@ -27,10 +27,7 @@ export class ObjectManager {
         });
 
         this.eventBus.on('update-object-geometry', (object: THREE.Object3D) => {
-            // Only handle if ModifierManager didn't pick it up (i.e., no modifiers)
-            if (!object.userData.modifiers || object.userData.modifiers.length === 0) {
-                this.updateObjectVisuals(object);
-            }
+            this.updateObjectVisuals(object);
         });
     }
 

@@ -13,8 +13,6 @@ import { LineTool } from './tools/LineTool';
 import { SelectTool } from './tools/SelectTool';
 import { SquareTool } from './tools/SquareTool';
 import { CircleTool } from './tools/CircleTool';
-import { FaceSelectTool } from './tools/FaceSelectTool';
-import { ModifierManager } from './managers/ModifierManager'; // New import
 import { ProjectManager } from './managers/ProjectManager'; // New import
 import { ShapeFactory } from './geometries/ShapeFactory'; // New import
 import { HandleUtils } from './helpers/HandleUtils'; // New import
@@ -65,7 +63,6 @@ const objectManager = new ObjectManager(eventBus, scene);
 const viewManager = new ViewManager(eventBus, 'app', scene); 
 const interactionManager = new InteractionManager(eventBus, viewManager);
 const toolManager = new ToolManager(eventBus);
-const modifierManager = new ModifierManager(eventBus);
 const projectManager = new ProjectManager(eventBus, objectManager);
 
 // Visual Managers
@@ -332,19 +329,6 @@ eventBus.on('add-mesh-to-scene', (mesh: THREE.Object3D) => {
     objectManager.selectObject(mesh);
 });
 
-// Auto-switch tool when face_delete modifier is added/removed
-eventBus.on('modifier-changed', (object: THREE.Object3D) => {
-    const hasFaceDelete = object.userData.modifiers?.some((m: any) => m.type === 'face_delete');
-    const isFaceDeleteActive = toolManager.getActiveToolId() === 'face_select';
-
-    if (hasFaceDelete && !isFaceDeleteActive) {
-        toolManager.selectTool('face_select');
-        console.log("Auto-switched to FaceSelectTool");
-    } else if (!hasFaceDelete && isFaceDeleteActive) {
-        toolManager.selectTool('select');
-        console.log("Auto-switched back to SelectTool");
-    }
-});
 
 // Update axes scale on camera change
 eventBus.on('camera-change', () => {
@@ -447,13 +431,10 @@ const selectTool = new SelectTool(eventBus, viewManager, objectManager, machineB
 const lineTool = new LineTool(eventBus, viewManager, objectManager);
 const squareTool = new SquareTool(eventBus, viewManager, objectManager);
 const circleTool = new CircleTool(eventBus, viewManager, objectManager);
-const faceSelectTool = new FaceSelectTool(eventBus, viewManager, objectManager);
-
 toolManager.registerTool(selectTool);
 toolManager.registerTool(lineTool);
 toolManager.registerTool(squareTool);
 toolManager.registerTool(circleTool);
-toolManager.registerTool(faceSelectTool);
 
 eventBus.on('tool-selected', (id: string) => {
     if (id === 'brush_create') {
@@ -469,8 +450,6 @@ eventBus.on('tool-selected', (id: string) => {
         objectManager.addObject(brush);
         toolManager.selectTool('select');
         objectManager.selectObject(brush);
-        // Initial geometry update to apply the lathe modifier
-        eventBus.emit('update-object-geometry', brush);
     }
 });
 
@@ -478,7 +457,7 @@ eventBus.on('tool-selected', (id: string) => {
 toolManager.selectTool('select');
 
 // UIManager
-const uiManager = new UIManager(eventBus, objectManager, viewManager, modifierManager, scene);
+const uiManager = new UIManager(eventBus, objectManager, viewManager, scene);
 
 // Expose for debugging
 (window as any).app = {
@@ -491,7 +470,6 @@ const uiManager = new UIManager(eventBus, objectManager, viewManager, modifierMa
     interactionManager,
     gridManager,
     rulerManager,
-    modifierManager,
     projectManager,
     robot // Expose robot instance
 };

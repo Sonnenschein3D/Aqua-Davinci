@@ -361,7 +361,7 @@ export class ViewManager {
 
     private updateControlsMode() {
         if (!this.controls) return;
-        const isSelectionTool = this.currentToolId === null || this.currentToolId === 'select' || this.currentToolId === 'face_select';
+        const isSelectionTool = this.currentToolId === null || this.currentToolId === 'select';
         if (isSelectionTool || this.activeView === ViewType.PERSPECTIVE) {
             this.controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN } as any;
         } else {
