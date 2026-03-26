@@ -646,7 +646,8 @@ export class PropertiesPanel {
                 wireframe: true,
                 roughness: 0.5,
                 metalness: 0.1,
-                flatShading: false
+                flatShading: false,
+                opacity: 1
             };
         }
         
@@ -692,6 +693,13 @@ export class PropertiesPanel {
         // Metalness
         new SpinCtrl(container, 'Metall', params.metalness, 0.1, (val) => {
             params.metalness = Math.max(0, Math.min(1, val));
+            this.eventBus.emit('update-object-geometry', obj);
+        }, 0, 1);
+
+        // Transparency
+        if (params.opacity === undefined) params.opacity = 1;
+        new SpinCtrl(container, 'Transparenz', params.opacity, 0.1, (val) => {
+            params.opacity = Math.max(0, Math.min(1, val));
             this.eventBus.emit('update-object-geometry', obj);
         }, 0, 1);
 
