@@ -172,8 +172,10 @@ export class ModifierManager {
                         frontMesh.renderOrder = 1;
                         object.add(frontMesh);
                     } else {
-                        // Single-pass for fully opaque body: FrontSide only -> solid closed body, no see-through.
-                        const finalMesh = new THREE.Mesh(g, makeMaterial(THREE.FrontSide));
+                        // DoubleSide for opaque: the shape winding may be reversed (getShape negates Z),
+                        // which would cull side-wall faces with FrontSide. DoubleSide renders all faces
+                        // regardless of winding; depth testing still produces a fully solid body.
+                        const finalMesh = new THREE.Mesh(g, makeMaterial(THREE.DoubleSide));
                         finalMesh.userData.isGeneratedVisual = true;
                         object.add(finalMesh);
                     }
