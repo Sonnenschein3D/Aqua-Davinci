@@ -151,6 +151,7 @@ export class ShapeUtils {
         const material = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false });
         const curveMesh = new THREE.Line(geometry, material);
         curveMesh.userData.isCurve = true;
+        curveMesh.userData.curve = curve;
         curveMesh.frustumCulled = false;
         curveMesh.renderOrder = 999;
         group.add(curveMesh);
