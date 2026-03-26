@@ -178,24 +178,26 @@ export class ModifierManager {
     
                             const isWireframe = matParams?.wireframe === true;
     
-            
+                            const latheOpacity = matParams?.opacity !== undefined ? matParams.opacity : 1;
     
                             const material = new THREE.MeshStandardMaterial({
-    
+
                                 color: new THREE.Color(matParams?.color || 0xcccccc),
-    
+
                                 side: THREE.DoubleSide,
-    
+
                                 roughness: matParams?.roughness || 0.5,
-    
+
                                 metalness: matParams?.metalness || 0.1,
-    
+
                                 wireframe: isWireframe,
-    
-                                transparent: false,
-    
-                                opacity: 1.0
-    
+
+                                opacity: latheOpacity,
+
+                                transparent: latheOpacity < 1,
+
+                                depthWrite: latheOpacity >= 1
+
                             });
     
             

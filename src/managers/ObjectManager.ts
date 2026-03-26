@@ -51,6 +51,12 @@ export class ObjectManager {
                 if (params.color) mat.color.set(params.color);
                 if (params.roughness !== undefined && mat.roughness !== undefined) mat.roughness = params.roughness;
                 if (params.metalness !== undefined && mat.metalness !== undefined) mat.metalness = params.metalness;
+                if (params.opacity !== undefined) {
+                    mat.opacity = params.opacity;
+                    mat.transparent = params.opacity < 1;
+                    mat.depthWrite = params.opacity >= 1;
+                    mat.needsUpdate = true;
+                }
                 if (params.flatShading !== undefined) {
                     mat.flatShading = params.flatShading;
                     mat.needsUpdate = true;

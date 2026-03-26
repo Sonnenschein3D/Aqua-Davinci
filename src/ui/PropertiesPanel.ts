@@ -643,10 +643,11 @@ export class PropertiesPanel {
             
             obj.userData.materialParams = {
                 color: color,
-                wireframe: true,
+                wireframe: false,
                 roughness: 0.5,
                 metalness: 0.1,
-                flatShading: false
+                flatShading: false,
+                opacity: 1
             };
         }
         
@@ -683,17 +684,15 @@ export class PropertiesPanel {
         solidRow.appendChild(solidCheck); solidRow.appendChild(solidLabel);
         container.appendChild(solidRow);
 
-        // Roughness
-        new SpinCtrl(container, 'Rauheit', params.roughness, 0.1, (val) => {
-            params.roughness = Math.max(0, Math.min(1, val));
+        // Transparency (0 = opaque, 1 = fully transparent)
+        if (params.opacity === undefined) params.opacity = 1;
+        new SpinCtrl(container, 'Transparenz', 1 - params.opacity, 0.1, (val) => {
+            params.opacity = 1 - Math.max(0, Math.min(1, val));
             this.eventBus.emit('update-object-geometry', obj);
         }, 0, 1);
 
-        // Metalness
-        new SpinCtrl(container, 'Metall', params.metalness, 0.1, (val) => {
-            params.metalness = Math.max(0, Math.min(1, val));
-            this.eventBus.emit('update-object-geometry', obj);
-        }, 0, 1);
+        // Sync material state immediately when the panel opens
+        this.eventBus.emit('update-object-geometry', obj);
 
         return container;
     }
