@@ -29,6 +29,10 @@ export class UIManager {
                 this.viewManager.focusOnObject(selected[0]);
             }
         });
+
+        this.eventBus.on('toggle-debug-console', () => {
+            this.toolbar.debugConsole.toggle();
+        });
     }
 
     private initKeyboardShortcuts() {
