@@ -27,6 +27,8 @@ export class ViewManager {
     private views: { [key in ViewType]?: ViewDefinition } = {};
     private activeView: ViewType = ViewType.PERSPECTIVE;
     private viewLabel: HTMLElement;
+    private viewMenu: HTMLElement | null = null;
+    private viewMenuCloseHandler: ((e: MouseEvent | TouchEvent) => void) | null = null;
     private resetButton: HTMLElement;
     private controls: OrbitControls | null = null;
     private currentToolId: string | null = null;
@@ -57,6 +59,14 @@ export class ViewManager {
         this.viewLabel.style.fontWeight = 'bold';
         this.viewLabel.style.fontFamily = 'Arial, sans-serif';
         this.viewLabel.style.textShadow = '1px 1px 2px black';
+        this.viewLabel.style.cursor = 'pointer';
+        this.viewLabel.style.pointerEvents = 'auto';
+        this.viewLabel.style.userSelect = 'none';
+        this.viewLabel.style.textDecoration = 'underline';
+        this.viewLabel.style.textDecorationColor = 'rgba(255,255,255,0.4)';
+        this.viewLabel.onmouseenter = () => { this.viewLabel.style.color = '#aaddff'; };
+        this.viewLabel.onmouseleave = () => { this.viewLabel.style.color = 'white'; };
+        this.viewLabel.onclick = (e) => { e.stopPropagation(); this.toggleViewMenu(); };
         labelContainer.appendChild(this.viewLabel);
 
         this.resetButton = document.createElement('div');
@@ -261,6 +271,77 @@ export class ViewManager {
     private updateViewLabel() {
         const names = { [ViewType.TOP]: 'Oben', [ViewType.FRONT]: 'Vorne', [ViewType.LEFT]: 'Links', [ViewType.PERSPECTIVE]: 'Perspektive' };
         this.viewLabel.innerText = names[this.activeView];
+    }
+
+    private toggleViewMenu() {
+        if (this.viewMenu) {
+            this.closeViewMenu();
+            return;
+        }
+        const names: { [key in ViewType]: string } = {
+            [ViewType.TOP]: 'Oben',
+            [ViewType.FRONT]: 'Vorne',
+            [ViewType.LEFT]: 'Links',
+            [ViewType.PERSPECTIVE]: 'Perspektive'
+        };
+        const menu = document.createElement('div');
+        this.viewMenu = menu;
+        Object.assign(menu.style, {
+            position: 'absolute',
+            top: '85px',
+            left: '75px',
+            background: 'rgba(30, 30, 30, 0.95)',
+            border: '1px solid #555',
+            borderRadius: '4px',
+            zIndex: '3000',
+            overflow: 'hidden',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.6)',
+            fontFamily: 'Arial, sans-serif',
+            fontSize: '13px',
+            minWidth: '130px'
+        });
+        ([ViewType.PERSPECTIVE, ViewType.TOP, ViewType.FRONT, ViewType.LEFT] as ViewType[]).forEach(type => {
+            const item = document.createElement('div');
+            const isActive = type === this.activeView;
+            Object.assign(item.style, {
+                padding: '8px 14px',
+                color: isActive ? '#aaddff' : '#dddddd',
+                cursor: 'pointer',
+                fontWeight: isActive ? 'bold' : 'normal',
+                background: isActive ? 'rgba(0, 122, 204, 0.25)' : 'transparent',
+                transition: 'background 0.15s'
+            });
+            item.innerText = names[type];
+            item.onmouseenter = () => { if (type !== this.activeView) item.style.background = 'rgba(255,255,255,0.08)'; };
+            item.onmouseleave = () => { if (type !== this.activeView) item.style.background = 'transparent'; };
+            item.onclick = (e) => {
+                e.stopPropagation();
+                this.closeViewMenu();
+                this.setActiveView(type);
+            };
+            menu.appendChild(item);
+        });
+        this.container.appendChild(menu);
+        const closeOnOutside = (e: MouseEvent | TouchEvent) => {
+            if (!menu.contains(e.target as Node) && !this.viewLabel.contains(e.target as Node)) {
+                this.closeViewMenu();
+            }
+        };
+        this.viewMenuCloseHandler = closeOnOutside;
+        document.addEventListener('mousedown', closeOnOutside);
+        document.addEventListener('touchstart', closeOnOutside);
+    }
+
+    private closeViewMenu() {
+        if (this.viewMenu) {
+            if (this.viewMenu.parentElement) this.viewMenu.parentElement.removeChild(this.viewMenu);
+            this.viewMenu = null;
+        }
+        if (this.viewMenuCloseHandler) {
+            document.removeEventListener('mousedown', this.viewMenuCloseHandler);
+            document.removeEventListener('touchstart', this.viewMenuCloseHandler);
+            this.viewMenuCloseHandler = null;
+        }
     }
 
     private setupControls() {
