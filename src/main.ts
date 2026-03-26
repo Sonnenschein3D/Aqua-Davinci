@@ -412,6 +412,22 @@ eventBus.on('open-settings', () => {
     gridRow.appendChild(gridLabel); gridRow.appendChild(gridInput);
     modal.appendChild(gridRow);
 
+    // Debug Console Button
+    const debugRow = document.createElement('div');
+    debugRow.style.marginBottom = '10px';
+    const debugBtn = document.createElement('button');
+    debugBtn.innerText = 'Debug-Konsole öffnen/schließen';
+    Object.assign(debugBtn.style, {
+        width: '100%', padding: '8px', background: '#333', color: '#aaa',
+        border: '1px solid #555', borderRadius: '4px', cursor: 'pointer', fontSize: '13px'
+    });
+    debugBtn.onclick = () => {
+        eventBus.emit('toggle-debug-console', null);
+        document.body.removeChild(overlay);
+    };
+    debugRow.appendChild(debugBtn);
+    modal.appendChild(debugRow);
+
     // Close Button
     const closeBtn = document.createElement('button');
     closeBtn.innerText = 'Schließen';
