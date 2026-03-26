@@ -54,6 +54,7 @@ export class ObjectManager {
                 if (params.opacity !== undefined) {
                     mat.opacity = params.opacity;
                     mat.transparent = params.opacity < 1;
+                    mat.depthWrite = params.opacity >= 1;
                     mat.needsUpdate = true;
                 }
                 if (params.flatShading !== undefined) {

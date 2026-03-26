@@ -91,7 +91,8 @@ export class MeshConverter {
             metalness: params.metalness !== undefined ? params.metalness : 0.1,
             flatShading: params.flatShading !== undefined ? params.flatShading : false,
             opacity: opacity,
-            transparent: opacity < 1
+            transparent: opacity < 1,
+            depthWrite: opacity >= 1
         });
 
         const newMesh = new THREE.Mesh(finalGeo, material);
