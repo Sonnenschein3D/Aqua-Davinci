@@ -112,11 +112,15 @@ export class ModifierManager {
                 if (shape) {
                     const geo = new THREE.ShapeGeometry(shape);
                     geo.rotateX(-Math.PI / 2);
+                    const fillOpacity = matParams.opacity !== undefined ? matParams.opacity : 1;
                     const material = new THREE.MeshStandardMaterial({
                         color: new THREE.Color(matParams.color || 0xcccccc),
                         side: THREE.DoubleSide,
                         roughness: matParams.roughness || 0.5,
                         metalness: matParams.metalness || 0.1,
+                        opacity: fillOpacity,
+                        transparent: fillOpacity < 1,
+                        depthWrite: fillOpacity >= 1,
                         polygonOffset: true,
                         polygonOffsetFactor: 1,
                         polygonOffsetUnits: 1

@@ -43,6 +43,17 @@ export class ShapeFactory {
             if (!object.userData.isMainAnchor && type !== 'background_image') {
                 ShapeUtils.addAnchor(object);
             }
+
+            if (type !== 'background_image' && !object.userData.materialParams) {
+                object.userData.materialParams = {
+                    color: '#cccccc',
+                    wireframe: false,
+                    roughness: 0.5,
+                    metalness: 0.1,
+                    flatShading: false,
+                    opacity: 1
+                };
+            }
         }
 
         return object;
