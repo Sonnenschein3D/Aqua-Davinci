@@ -58,6 +58,10 @@ export class ObjectManager {
                     mat.flatShading = params.flatShading;
                     mat.needsUpdate = true;
                 }
+                if (params.wireframe !== undefined) {
+                    mat.wireframe = !!params.wireframe;
+                    mat.needsUpdate = true;
+                }
             }
 
             // Update Wireframe
