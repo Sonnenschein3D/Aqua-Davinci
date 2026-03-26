@@ -82,13 +82,16 @@ export class MeshConverter {
 
         // --- MATERIAL ERSTELLEN ---
         const params = object.userData.materialParams || {};
+        const opacity = params.opacity !== undefined ? params.opacity : 1;
         const material = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color(params.color || originalColor), 
             side: THREE.DoubleSide,
             wireframe: params.wireframe !== undefined ? params.wireframe : true,
             roughness: params.roughness !== undefined ? params.roughness : 0.5,
             metalness: params.metalness !== undefined ? params.metalness : 0.1,
-            flatShading: params.flatShading !== undefined ? params.flatShading : false
+            flatShading: params.flatShading !== undefined ? params.flatShading : false,
+            opacity: opacity,
+            transparent: opacity < 1
         });
 
         const newMesh = new THREE.Mesh(finalGeo, material);
@@ -109,7 +112,8 @@ export class MeshConverter {
             wireframe: params.wireframe !== undefined ? params.wireframe : true,
             roughness: params.roughness !== undefined ? params.roughness : 0.5,
             metalness: params.metalness !== undefined ? params.metalness : 0.1,
-            flatShading: params.flatShading !== undefined ? params.flatShading : false
+            flatShading: params.flatShading !== undefined ? params.flatShading : false,
+            opacity: opacity
         };
 
         return newMesh;

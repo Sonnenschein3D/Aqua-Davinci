@@ -178,7 +178,7 @@ export class ModifierManager {
     
                             const isWireframe = matParams?.wireframe === true;
     
-            
+                            const latheOpacity = matParams?.opacity !== undefined ? matParams.opacity : 1;
     
                             const material = new THREE.MeshStandardMaterial({
     
@@ -192,9 +192,9 @@ export class ModifierManager {
     
                                 wireframe: isWireframe,
     
-                                transparent: false,
+                                opacity: latheOpacity,
     
-                                opacity: 1.0
+                                transparent: latheOpacity < 1
     
                             });
     
