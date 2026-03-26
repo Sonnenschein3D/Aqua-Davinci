@@ -419,14 +419,9 @@ export class PropertiesPanel {
         };
 
         const type = obj.userData.type;
-        const isClosed2D = type === 'square' || type === 'circle' || (type === 'bezier_path' && obj.userData.isClosed);
         const isPath = type === 'bezier_path';
-        const is3DObject = type === 'square' || type === 'circle' || type === 'boolean_result';
         
-        modMenu.appendChild(createMenuItem('Extrudieren', isClosed2D, () => this.modifierManager.addModifier(obj, 'extrude')));
         modMenu.appendChild(createMenuItem('Rotation', isPath, () => this.modifierManager.addModifier(obj, 'lathe')));
-        modMenu.appendChild(createMenuItem('In Mesh umwandeln', is3DObject, () => this.eventBus.emit('convert-to-mesh', obj)));
-        modMenu.appendChild(createMenuItem('Flächen entfernen', is3DObject, () => this.modifierManager.addModifier(obj, 'face_delete')));
 
         modBtn.onclick = (e) => { e.stopPropagation(); modMenu.style.display = modMenu.style.display === 'flex' ? 'none' : 'flex'; };
         window.addEventListener('click', () => { modMenu.style.display = 'none'; }, { once:true });
@@ -895,31 +890,12 @@ export class PropertiesPanel {
             
             item.appendChild(header);
 
-            if (mod.type === 'extrude') {
-                const paramRow = document.createElement('div');
-                paramRow.style.marginTop = "5px";
-                new SpinCtrl(item, 'Höhe', mod.params.height, 1, (val) => {
-                    this.modifierManager.updateModifierParam(obj, index, 'height', val);
-                });
-            } else if (mod.type === 'lathe') {
+            if (mod.type === 'lathe') {
                 const paramRow = document.createElement('div');
                 paramRow.style.marginTop = "5px";
                 new SpinCtrl(item, 'Segmente', mod.params.segments || 32, 1, (val) => {
                     this.modifierManager.updateModifierParam(obj, index, 'segments', Math.round(val));
                 }, 3, 128, 0);
-            } else if (mod.type === 'face_delete') {
-                const infoDiv = document.createElement('div');
-                infoDiv.style.cssText = "margin-top: 5px; color: #aaa; font-style: italic; font-size: 10px;";
-                infoDiv.innerText = "Im 3D-Fenster Flächen auswählen und dann hier entfernen.";
-                item.appendChild(infoDiv);
-
-                const removeBtn = document.createElement('button');
-                removeBtn.innerText = "Markierte Flächen entfernen";
-                removeBtn.style.cssText = "background:#555; border:1px solid #666; color:white; cursor:pointer; padding: 4px; font-size: 10px; margin-top: 5px; width: 100%;";
-                removeBtn.onclick = () => {
-                    this.eventBus.emit('execute-face-delete', obj);
-                };
-                item.appendChild(removeBtn);
             }
             container.appendChild(item);
         });
