@@ -86,7 +86,7 @@ export class MeshConverter {
         const material = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color(params.color || originalColor), 
             side: THREE.DoubleSide,
-            wireframe: params.wireframe !== undefined ? params.wireframe : true,
+            wireframe: params.wireframe !== undefined ? params.wireframe : false,
             roughness: params.roughness !== undefined ? params.roughness : 0.5,
             metalness: params.metalness !== undefined ? params.metalness : 0.1,
             flatShading: params.flatShading !== undefined ? params.flatShading : false,
@@ -109,7 +109,7 @@ export class MeshConverter {
         
         newMesh.userData.materialParams = {
             color: params.color || originalColor,
-            wireframe: params.wireframe !== undefined ? params.wireframe : true,
+            wireframe: params.wireframe !== undefined ? params.wireframe : false,
             roughness: params.roughness !== undefined ? params.roughness : 0.5,
             metalness: params.metalness !== undefined ? params.metalness : 0.1,
             flatShading: params.flatShading !== undefined ? params.flatShading : false,

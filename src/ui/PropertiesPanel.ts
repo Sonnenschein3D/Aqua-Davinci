@@ -643,7 +643,7 @@ export class PropertiesPanel {
             
             obj.userData.materialParams = {
                 color: color,
-                wireframe: true,
+                wireframe: false,
                 roughness: 0.5,
                 metalness: 0.1,
                 flatShading: false,
@@ -696,10 +696,10 @@ export class PropertiesPanel {
             this.eventBus.emit('update-object-geometry', obj);
         }, 0, 1);
 
-        // Transparency
+        // Transparency (0 = opaque, 1 = fully transparent)
         if (params.opacity === undefined) params.opacity = 1;
-        new SpinCtrl(container, 'Transparenz', params.opacity, 0.1, (val) => {
-            params.opacity = Math.max(0, Math.min(1, val));
+        new SpinCtrl(container, 'Transparenz', 1 - params.opacity, 0.1, (val) => {
+            params.opacity = 1 - Math.max(0, Math.min(1, val));
             this.eventBus.emit('update-object-geometry', obj);
         }, 0, 1);
 
