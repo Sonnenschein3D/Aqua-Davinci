@@ -1,6 +1,5 @@
 import { EventBus } from '../core/EventBus';
 import * as THREE from 'three';
-import { ModifierManager } from '../managers/ModifierManager';
 import { ObjectManager } from '../managers/ObjectManager';
 import { SpinCtrl } from './components/SpinCtrl';
 import { ShapeFactory } from '../geometries/ShapeFactory';
@@ -8,7 +7,6 @@ import { ShapeFactory } from '../geometries/ShapeFactory';
 
 export class PropertiesPanel {
     private eventBus: EventBus;
-    private modifierManager: ModifierManager;
     private objectManager: ObjectManager;
     private container: HTMLElement;
     private currentObject: THREE.Object3D | null = null;
@@ -25,9 +23,8 @@ export class PropertiesPanel {
         showMachineBrush: false
     };
 
-    constructor(eventBus: EventBus, modifierManager: ModifierManager, objectManager: ObjectManager, _scene: THREE.Scene) {
+    constructor(eventBus: EventBus, objectManager: ObjectManager, _scene: THREE.Scene) {
         this.eventBus = eventBus;
-        this.modifierManager = modifierManager;
         this.objectManager = objectManager;
         this.container = document.createElement('div');
         this.setupContainer();
@@ -92,27 +89,6 @@ export class PropertiesPanel {
             else this.showEmpty();
         });
         
-        this.eventBus.on('modifier-param-changed', (object: THREE.Object3D) => {
-            if (this.currentObject && this.currentObject.uuid === object.uuid) {
-                // Try to update specific elements first to avoid flicker
-                const statusDiv = document.getElementById(`status-manifold-${object.uuid}`);
-                if (statusDiv) {
-                    const count = object.userData.openEdgeCount || 0;
-                    statusDiv.innerText = count > 0 ? `⚠ Warnung: ${count} Löcher / offene Kanten!` : "✔ Modell ist wasserdicht.";
-                    statusDiv.style.color = count > 0 ? "#ff4444" : "#88ff88";
-                } else {
-                    // Fallback to full refresh if element missing (e.g. newly added mod)
-                    this.refreshContent(object);
-                }
-            }
-        });
-
-        this.eventBus.on('modifier-changed', (object: THREE.Object3D) => {
-            if (this.currentObject && this.currentObject.uuid === object.uuid) {
-                this.refreshContent(object);
-            }
-        });
-
         this.eventBus.on('object-modified', (object: THREE.Object3D) => {
             if (this.currentObject && this.currentObject.uuid === object.uuid) {
                 this.refreshContent(object);
@@ -392,45 +368,6 @@ export class PropertiesPanel {
         this.container.appendChild(headerRow);
         this.container.appendChild(counterDiv);
         
-        // Modifier Button
-        const modWrapper = document.createElement('div');
-        modWrapper.style.position = 'relative';
-        const modBtn = document.createElement('button');
-        modBtn.innerText = "+";
-        modBtn.title = "Modifikatoren hinzufügen";
-        modBtn.style.cssText = "width: 20px; height: 20px; background: #444; color: white; border: 1px solid #555; padding: 0; font-size: 16px; cursor: pointer; border-radius: 3px; font-weight: normal; line-height: 18px;";
-        
-        const modMenu = document.createElement('div');
-        modMenu.style.cssText = "position: absolute; top: 22px; right: 0; background: #333; border: 1px solid #555; display: none; flex-direction: column; z-index: 2000; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); min-width: 110px;";
-        
-        const createMenuItem = (label: string, enabled: boolean, action: () => void) => {
-            const item = document.createElement('div');
-            item.innerText = label;
-            item.style.cssText = "padding: 5px 10px; font-size: 11px; color: #eee; border-bottom: 1px solid #444;";
-            if (enabled) {
-                item.style.cursor = 'pointer';
-                item.onmouseover = () => item.style.background = '#444';
-                item.onmouseout = () => item.style.background = '#333';
-                item.onclick = () => { action(); modMenu.style.display = 'none'; };
-            } else {
-                item.style.color = '#666'; item.style.cursor = 'default';
-            }
-            return item;
-        };
-
-        const type = obj.userData.type;
-        const isPath = type === 'bezier_path';
-        
-        modMenu.appendChild(createMenuItem('Rotation', isPath, () => this.modifierManager.addModifier(obj, 'lathe')));
-
-        modBtn.onclick = (e) => { e.stopPropagation(); modMenu.style.display = modMenu.style.display === 'flex' ? 'none' : 'flex'; };
-        window.addEventListener('click', () => { modMenu.style.display = 'none'; }, { once:true });
-
-        modWrapper.appendChild(modBtn);
-        modWrapper.appendChild(modMenu);
-        headerRow.appendChild(modWrapper);
-        this.container.appendChild(headerRow);
-
         // --- Name ---
         const nameRow = document.createElement('div');
         nameRow.style.cssText = "display: flex; align-items: center; margin-bottom: 10px;";
@@ -446,58 +383,6 @@ export class PropertiesPanel {
         nameRow.appendChild(nameInput);
         this.container.appendChild(nameRow);
 
-        // --- Save as Profile Button ---
-        if (obj.userData.modifiers?.some((m: any) => m.type === 'lathe')) {
-            const saveBtn = document.createElement('button');
-            saveBtn.innerText = "Als Pinselprofil speichern";
-            saveBtn.style.cssText = "width: 100%; padding: 5px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; margin-bottom: 10px;";
-            saveBtn.onclick = () => {
-                const name = prompt("Bitte geben Sie einen Namen für das Pinselprofil ein:", obj.name);
-                if (name) {
-                    const latheMod = obj.userData.modifiers.find((m: any) => m.type === 'lathe');
-                    
-                    const nodes = obj.children.filter(c => c.userData.isNode);
-                    const segment = obj.children.find(c => c.userData.type === 'bezier_line');
-
-                    if (latheMod && nodes.length === 2 && segment) {
-                        const helpers = segment.userData.helpers;
-                        if (!helpers || !helpers.cp1 || !helpers.cp2) {
-                            alert("Fehler: Kontrollpunkte des Pinselprofils nicht gefunden.");
-                            return;
-                        }
-
-                        // Determine p0 (tip) and p1 (base) by y-position
-                        let p0_node, p1_node;
-                        if (nodes[0].position.y < nodes[1].position.y) {
-                            p0_node = nodes[0];
-                            p1_node = nodes[1];
-                        } else {
-                            p0_node = nodes[1];
-                            p1_node = nodes[0];
-                        }
-                        
-                        const bezierProfile = {
-                            p1: new THREE.Vector2(p1_node.position.x, p1_node.position.y),
-                            cp1: new THREE.Vector2(helpers.cp1.position.x, helpers.cp1.position.y),
-                            cp2: new THREE.Vector2(helpers.cp2.position.x, helpers.cp2.position.y),
-                            p0: new THREE.Vector2(p0_node.position.x, p0_node.position.y)
-                        };
-
-                        const profileData = {
-                            bezierProfile: bezierProfile,
-                            latheSegments: latheMod.params.segments
-                        };
-
-                        this.eventBus.emit('save-brush-profile', { name, profile: profileData });
-                        alert(`Profil "${name}" wurde gespeichert.`);
-                    } else {
-                        alert("Fehler: Pinselprofil-Daten (Nodes/Segment) nicht gefunden.");
-                    }
-                }
-            };
-            this.container.appendChild(saveBtn);
-        }
-
         // --- SECTIONS ---
 
         // 1. Material (Accordion)
@@ -509,28 +394,18 @@ export class PropertiesPanel {
         this.renderGeometryControls(obj, geoContent);
         this.container.appendChild(this.createAccordionSection("Geometrie", geoContent)); // Default open via logic
 
-        // 3. Aktionen / Modifiers (Accordion)
-        const hasModifiers = obj.userData.modifiers && obj.userData.modifiers.length > 0;
+        // 3. Aktionen (Accordion)
         const isBooleanResult = obj.userData.type === 'boolean_result';
 
-        if (hasModifiers || isBooleanResult) {
+        if (isBooleanResult) {
             const modContent = document.createElement('div');
             
-            if (hasModifiers) {
-                this.renderModifiersList(obj, modContent);
-            } else if (isBooleanResult) {
-                const info = document.createElement('div');
-                info.style.cssText = "color: #888; font-style: italic; font-size: 10px; padding: 5px;";
-                info.innerText = "Boolesches Objekt";
-                modContent.appendChild(info);
-
-                const hint = document.createElement('div');
-                hint.style.cssText = "color: #aaa; font-style: italic; font-size: 9px; padding: 5px; border-top: 1px solid #444; margin-top: 5px;";
-                hint.innerText = "Tipp: Nutze 'In Mesh umwandeln' oben (+), um Flächen löschen zu können.";
-                modContent.appendChild(hint);
-            }
-
-            // --- General Status Indicator (Now at the bottom for better logic) ---
+            const info = document.createElement('div');
+            info.style.cssText = "color: #888; font-style: italic; font-size: 10px; padding: 5px;";
+            info.innerText = "Boolesches Objekt";
+            modContent.appendChild(info);
+
+            // --- General Status Indicator ---
             const statusDiv = document.createElement('div');
             statusDiv.id = `status-manifold-${obj.uuid}`;
             statusDiv.style.cssText = "padding: 5px; margin-top: 10px; background: #333; border-radius: 3px; font-size: 10px; border: 1px solid #444; border-left: 3px solid #888;";
@@ -855,50 +730,6 @@ export class PropertiesPanel {
                  container.appendChild(offsetDiv);
              }
         }
-    }
-
-    private renderModifiersList(obj: THREE.Object3D, container: HTMLElement) {
-        obj.userData.modifiers.forEach((mod: any, index: number) => {
-            const item = document.createElement('div');
-            item.style.cssText = "background:#2a2a2a; padding:5px; margin-top:5px; border:1px solid #444; font-size: 11px;";
-            
-            const header = document.createElement('div');
-            header.style.cssText = "display: flex; align-items: center; justify-content: space-between;";
-            
-            // Left
-            const leftGroup = document.createElement('div');
-            leftGroup.style.cssText = "display: flex; align-items: center; gap: 5px;";
-            const eyeBtn = document.createElement('input');
-            eyeBtn.type = "checkbox";
-            eyeBtn.checked = mod.active !== false;
-            eyeBtn.title = "Aktivieren/Deaktivieren";
-            eyeBtn.onchange = () => {
-                mod.active = eyeBtn.checked;
-                this.eventBus.emit('modifier-param-changed', obj);
-                this.eventBus.emit('update-object-geometry', obj);
-            };
-            const nameSpan = document.createElement('span'); nameSpan.innerText = mod.name;
-            leftGroup.appendChild(eyeBtn); leftGroup.appendChild(nameSpan);
-            header.appendChild(leftGroup);
-            
-            // Right
-            const delBtn = document.createElement('button');
-            delBtn.innerText = "x";
-            delBtn.style.cssText = "background:none; border:none; color:#f44; cursor:pointer; padding:0; font-size: 10px;";
-            delBtn.onclick = () => this.modifierManager.removeModifier(obj, index);
-            header.appendChild(delBtn);
-            
-            item.appendChild(header);
-
-            if (mod.type === 'lathe') {
-                const paramRow = document.createElement('div');
-                paramRow.style.marginTop = "5px";
-                new SpinCtrl(item, 'Segmente', mod.params.segments || 32, 1, (val) => {
-                    this.modifierManager.updateModifierParam(obj, index, 'segments', Math.round(val));
-                }, 3, 128, 0);
-            }
-            container.appendChild(item);
-        });
     }
 
     private updateCircle(obj: THREE.Object3D) {

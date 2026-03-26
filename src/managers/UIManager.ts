@@ -4,19 +4,18 @@ import { Toolbar } from '../ui/Toolbar';
 import { PropertiesPanel } from '../ui/PropertiesPanel';
 import { ObjectManager } from './ObjectManager';
 import { ViewManager, ViewType } from './ViewManager';
-import { ModifierManager } from './ModifierManager';
 
 export class UIManager {
     private eventBus: EventBus;
     private viewManager: ViewManager;
     private toolbar: Toolbar;
 
-    constructor(eventBus: EventBus, objectManager: ObjectManager, viewManager: ViewManager, modifierManager: ModifierManager, scene: THREE.Scene) {
+    constructor(eventBus: EventBus, objectManager: ObjectManager, viewManager: ViewManager, scene: THREE.Scene) {
         this.eventBus = eventBus;
         this.viewManager = viewManager;
         
         this.toolbar = new Toolbar(eventBus);
-        new PropertiesPanel(eventBus, modifierManager, objectManager, scene);
+        new PropertiesPanel(eventBus, objectManager, scene);
         
         this.initUIListeners();
         this.initKeyboardShortcuts();

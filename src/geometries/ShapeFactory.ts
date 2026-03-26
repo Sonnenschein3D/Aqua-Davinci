@@ -89,10 +89,6 @@ export class ShapeFactory {
                 child.visible = true;
             }
         });
-        
-        group.userData.modifiers = [
-            { type: 'lathe', name: 'Rotation', params: { segments: 32, phiStart: 0, phiLength: Math.PI * 2 }, active: true }
-        ];
 
         ShapeUtils.addAnchor(group);
         return group;
