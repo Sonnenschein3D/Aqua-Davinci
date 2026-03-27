@@ -29,10 +29,10 @@ export class GizmoHelper {
             const pickGeo = new THREE.CylinderGeometry(pickRadius, pickRadius, pickLen, 8);
             pickGeo.translate(0, pickStart + pickLen / 2, 0);
             
-            const pickMesh = new THREE.Mesh(pickGeo, new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 }));
+            const pickMesh = new THREE.Mesh(pickGeo, new THREE.MeshBasicMaterial({ visible: false }));
             pickMesh.userData = { axis, mode: 'translate' };
 
-            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true, opacity: 1.0 });
+            const mat = this.makeMat(color);
             
             const line = new THREE.Mesh(lineGeo, mat);
             const cone = new THREE.Mesh(coneGeo, mat);
@@ -76,7 +76,7 @@ export class GizmoHelper {
             if (rotation?.y) geo.rotateY(rotation.y);
 
             // Make planes slightly visible (opacity 0.2) to show they are interactive
-            const mat = new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.2, depthTest: false });
+            const mat = this.makeMat(color, 0.2, THREE.DoubleSide);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.renderOrder = 99;
             mesh.userData = { axis, mode: 'translate' };
@@ -115,13 +115,13 @@ export class GizmoHelper {
             const group = new THREE.Group();
             
             const geo = new THREE.TorusGeometry(radius, tube, 8, 64);
-            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 1.0 });
+            const mat = this.makeMat(color);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.renderOrder = 100;
             mesh.userData = { axis, mode: 'rotate' };
 
             const pickGeo = new THREE.TorusGeometry(radius, pickTube, 8, 32);
-            const pickMat = new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 });
+            const pickMat = new THREE.MeshBasicMaterial({ visible: false });
             const pickMesh = new THREE.Mesh(pickGeo, pickMat);
             pickMesh.userData = { axis, mode: 'rotate' };
 
@@ -139,6 +139,10 @@ export class GizmoHelper {
         gizmo.add(createRing('z', 0x6666ff));
 
         return gizmo;
+    }
+
+    private static makeMat(color: number, opacity: number = 1.0, side?: THREE.Side): THREE.MeshBasicMaterial {
+        return new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true, opacity, side });
     }
 
     private static createLabel(text: string, color: string): THREE.Sprite {
