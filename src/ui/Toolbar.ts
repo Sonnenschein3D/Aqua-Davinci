@@ -71,7 +71,7 @@ export class Toolbar {
         // Bottom Toolbar (Footer)
         this.bottomToolbar = document.createElement('div');
         Object.assign(this.bottomToolbar.style, {
-            position: 'absolute',
+            position: 'fixed',
             bottom: '0',
             left: '0',
             width: '100%',
