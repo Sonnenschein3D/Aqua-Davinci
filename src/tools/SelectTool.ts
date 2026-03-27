@@ -478,7 +478,7 @@ export class SelectTool extends BaseTool implements Tool {
                     if (child instanceof THREE.Mesh) material.opacity = 0.6;
                 } else {
                     material.color.setHex(baseColor);
-                    if (child instanceof THREE.Mesh && axis.length > 1) material.opacity = 0.2;
+                    if (child instanceof THREE.Mesh) material.opacity = axis.length > 1 ? 0.2 : 1.0;
                 }
             }
         });
