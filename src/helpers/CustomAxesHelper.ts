@@ -32,26 +32,33 @@ export class CustomAxesHelper extends THREE.Object3D {
     }
 
     private makeOnTop(arrow: THREE.ArrowHelper) {
-        // Apply to line
+        // Replace materials with fresh instances so all settings are correct from the first compile.
         if (arrow.line) {
             arrow.line.renderOrder = 999;
-            if (arrow.line.material instanceof THREE.Material) {
-                arrow.line.material.depthTest = false;
-                arrow.line.material.depthWrite = false;
-                arrow.line.material.transparent = true;
-                arrow.line.material.opacity = 1.0;
-            }
+            const prevLineMat = arrow.line.material as THREE.LineBasicMaterial;
+            arrow.line.material = new THREE.LineBasicMaterial({
+                color: prevLineMat.color,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 1.0,
+                toneMapped: false,
+            });
+            prevLineMat.dispose();
         }
-        
-        // Apply to cone
+
         if (arrow.cone) {
             arrow.cone.renderOrder = 999;
-            if (arrow.cone.material instanceof THREE.Material) {
-                arrow.cone.material.depthTest = false;
-                arrow.cone.material.depthWrite = false;
-                arrow.cone.material.transparent = true;
-                arrow.cone.material.opacity = 1.0;
-            }
+            const prevConeMat = arrow.cone.material as THREE.MeshBasicMaterial;
+            arrow.cone.material = new THREE.MeshBasicMaterial({
+                color: prevConeMat.color,
+                depthTest: false,
+                depthWrite: false,
+                transparent: true,
+                opacity: 1.0,
+                toneMapped: false,
+            });
+            prevConeMat.dispose();
         }
     }
 
