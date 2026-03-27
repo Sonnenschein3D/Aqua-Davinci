@@ -49,6 +49,7 @@ export class PropertiesPanel {
             overflowY: 'auto'
         });
         this.container.id = 'properties-panel';
+        this.container.style.display = 'none';
         
         // Prevent events from bubbling
         ['mousedown', 'mouseup', 'mousemove', 'wheel', 'keydown', 'keyup'].forEach(evt => 
@@ -56,7 +57,6 @@ export class PropertiesPanel {
         );
 
         document.body.appendChild(this.container);
-        this.showEmpty();
     }
 
     private initListeners() {
@@ -107,6 +107,7 @@ export class PropertiesPanel {
     private showBrushProperties() {
         try {
             this.currentObject = null;
+            this.container.style.display = 'block';
             this.container.innerHTML = '';
             this.container.dataset.objUuid = 'brush-settings';
 
@@ -317,20 +318,12 @@ export class PropertiesPanel {
     private showEmpty() {
         this.currentObject = null;
                 // if (this.brushVisualizer) this.brushVisualizer.setVisible(false);
-        const allObjects = this.objectManager.getObjects();
-        const visibleObjects = allObjects.filter((o: THREE.Object3D) => o.visible).length;
-        
-        this.container.innerHTML = `
-            <h3 style="margin: 0 0 5px 0; font-size: 13px;">Eigenschaften</h3>
-            <div style="font-size: 10px; color: #888; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px;">
-                Objekte: ${allObjects.length} (${visibleObjects} sichtbar)
-            </div>
-            <div style="color: #666; font-style: italic; font-size: 11px;">Kein Objekt ausgewählt</div>
-        `;
+        this.container.style.display = 'none';
     }
 
     private showProperties(obj: THREE.Object3D) {
                 // if (this.brushVisualizer) this.brushVisualizer.setVisible(false);
+        this.container.style.display = 'block';
         if (this.currentObject === obj) {
             this.refreshContent(obj);
             return;
