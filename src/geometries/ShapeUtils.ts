@@ -107,7 +107,7 @@ export class ShapeUtils {
         const curve = new THREE.CubicBezierCurve3(start, cp1, cp2, end);
         const points = curve.getPoints(50);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false });
+        const material = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false, transparent: true });
         const curveMesh = new THREE.Line(geometry, material);
         curveMesh.userData.isCurve = true;
         curveMesh.frustumCulled = false;
@@ -148,7 +148,7 @@ export class ShapeUtils {
         const curve = new THREE.CubicBezierCurve3(start, cp1, cp2, end);
         const points = curve.getPoints(50);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        const material = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false });
+        const material = new THREE.LineBasicMaterial({ color: 0xffffff, depthTest: false, depthWrite: false, transparent: true });
         const curveMesh = new THREE.Line(geometry, material);
         curveMesh.userData.isCurve = true;
         curveMesh.userData.curve = curve;

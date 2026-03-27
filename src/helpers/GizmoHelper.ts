@@ -32,7 +32,7 @@ export class GizmoHelper {
             const pickMesh = new THREE.Mesh(pickGeo, new THREE.MeshBasicMaterial({ visible: false, transparent: true, opacity: 0 }));
             pickMesh.userData = { axis, mode: 'translate' };
 
-            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false });
+            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false, transparent: true, opacity: 1.0 });
             
             const line = new THREE.Mesh(lineGeo, mat);
             const cone = new THREE.Mesh(coneGeo, mat);
@@ -115,7 +115,7 @@ export class GizmoHelper {
             const group = new THREE.Group();
             
             const geo = new THREE.TorusGeometry(radius, tube, 8, 64);
-            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false });
+            const mat = new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 1.0 });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.renderOrder = 100;
             mesh.userData = { axis, mode: 'rotate' };
