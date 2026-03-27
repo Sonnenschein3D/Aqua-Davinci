@@ -108,6 +108,7 @@ export class PropertiesPanel {
         try {
             this.currentObject = null;
             this.container.style.display = 'block';
+            this.eventBus.emit('properties-panel-visible');
             this.container.innerHTML = '';
             this.container.dataset.objUuid = 'brush-settings';
 
@@ -319,11 +320,13 @@ export class PropertiesPanel {
         this.currentObject = null;
                 // if (this.brushVisualizer) this.brushVisualizer.setVisible(false);
         this.container.style.display = 'none';
+        this.eventBus.emit('properties-panel-hidden');
     }
 
     private showProperties(obj: THREE.Object3D) {
                 // if (this.brushVisualizer) this.brushVisualizer.setVisible(false);
         this.container.style.display = 'block';
+        this.eventBus.emit('properties-panel-visible');
         if (this.currentObject === obj) {
             this.refreshContent(obj);
             return;

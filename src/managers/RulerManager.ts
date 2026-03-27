@@ -14,7 +14,7 @@ export class RulerManager {
     private rulerThickness = 20;
     private toolbarWidth = 35;
     private headerHeight = 40;  
-    private propertiesWidth = 150;
+    private propertiesWidth = 0;
     private footerHeight = 30;
 
     constructor(eventBus: EventBus, viewManager: ViewManager) {
@@ -77,6 +77,16 @@ export class RulerManager {
 
     private initListeners() {
         this.eventBus.on('camera-change', () => requestAnimationFrame(() => this.updateRulers()));
+        this.eventBus.on('properties-panel-visible', () => {
+            this.propertiesWidth = 150;
+            this.topRulerCanvas.style.right = this.propertiesWidth + 'px';
+            requestAnimationFrame(() => this.updateRulers());
+        });
+        this.eventBus.on('properties-panel-hidden', () => {
+            this.propertiesWidth = 0;
+            this.topRulerCanvas.style.right = this.propertiesWidth + 'px';
+            requestAnimationFrame(() => this.updateRulers());
+        });
     }
 
     // Projects a world point to screen pixel coordinates relative to the canvas
