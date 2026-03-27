@@ -61,8 +61,8 @@ export class InteractionManager {
         } else if (Math.abs(dir.y) > 0.9) {
             normal.set(0, 1, 0); // Top/Bottom -> XZ Ebene bei Y=0
         } else {
-            // Perspektive: Ebene parallel zur Kamera durch den Ursprung
-            normal.copy(dir).negate();
+            // Perspektive: XZ Ebene bei Y=0
+            normal.set(0, 1, 0);
         }
 
         const plane = new THREE.Plane(normal, 0);
