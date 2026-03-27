@@ -39,6 +39,7 @@ export class CustomAxesHelper extends THREE.Object3D {
                 arrow.line.material.depthTest = false;
                 arrow.line.material.depthWrite = false;
                 arrow.line.material.transparent = true;
+                arrow.line.material.opacity = 1.0;
             }
         }
         
@@ -49,6 +50,7 @@ export class CustomAxesHelper extends THREE.Object3D {
                 arrow.cone.material.depthTest = false;
                 arrow.cone.material.depthWrite = false;
                 arrow.cone.material.transparent = true;
+                arrow.cone.material.opacity = 1.0;
             }
         }
     }
