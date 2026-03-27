@@ -38,6 +38,7 @@ export class CustomAxesHelper extends THREE.Object3D {
             if (arrow.line.material instanceof THREE.Material) {
                 arrow.line.material.depthTest = false;
                 arrow.line.material.depthWrite = false;
+                arrow.line.material.transparent = true;
             }
         }
         
@@ -47,6 +48,7 @@ export class CustomAxesHelper extends THREE.Object3D {
             if (arrow.cone.material instanceof THREE.Material) {
                 arrow.cone.material.depthTest = false;
                 arrow.cone.material.depthWrite = false;
+                arrow.cone.material.transparent = true;
             }
         }
     }
