@@ -82,7 +82,7 @@ export class MeshConverter {
 
         // --- MATERIAL ERSTELLEN ---
         const params = object.userData.materialParams || {};
-        const opacity = params.opacity !== undefined ? params.opacity : 1;
+        const opacity = Math.round((params.opacity !== undefined ? params.opacity : 1) * 100) / 100;
         const material = new THREE.MeshStandardMaterial({ 
             color: new THREE.Color(params.color || originalColor), 
             side: THREE.DoubleSide,
