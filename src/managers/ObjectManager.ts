@@ -50,9 +50,10 @@ export class ObjectManager {
                 if (params.roughness !== undefined && mat.roughness !== undefined) mat.roughness = params.roughness;
                 if (params.metalness !== undefined && mat.metalness !== undefined) mat.metalness = params.metalness;
                 if (params.opacity !== undefined) {
-                    mat.opacity = params.opacity;
-                    mat.transparent = params.opacity < 1;
-                    mat.depthWrite = params.opacity >= 1;
+                    const opacity = Math.round(params.opacity * 100) / 100;
+                    mat.opacity = opacity;
+                    mat.transparent = opacity < 1;
+                    mat.depthWrite = opacity >= 1;
                     mat.needsUpdate = true;
                 }
                 if (params.flatShading !== undefined && mat.flatShading !== undefined) {
@@ -157,7 +158,7 @@ export class ObjectManager {
         // THREE.ShapeGeometry is in the XY plane; rotate it into the XZ plane
         geometry.rotateX(-Math.PI / 2);
 
-        const opacity = params.opacity !== undefined ? params.opacity : 1;
+        const opacity = Math.round((params.opacity !== undefined ? params.opacity : 1) * 100) / 100;
         // Use MeshBasicMaterial for reliable visibility regardless of lighting conditions
         const material = new THREE.MeshBasicMaterial({
             color: new THREE.Color(params.color || '#cccccc'),
