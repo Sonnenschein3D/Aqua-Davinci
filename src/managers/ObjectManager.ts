@@ -36,6 +36,7 @@ export class ObjectManager {
         if (!params) return;
 
         const wfName = 'Visual_Wireframe_Overlay';
+        const fillName = 'Visual_Fill';
 
         // Helper function to process each mesh found
         const processMesh = (mesh: THREE.Mesh) => {
@@ -59,6 +60,9 @@ export class ObjectManager {
                     mat.needsUpdate = true;
                 }
             }
+
+            // Skip wireframe overlay for generated visual meshes (e.g. fill mesh)
+            if (mesh.userData.isGeneratedVisual) return;
 
             // Update Wireframe
             let wfObj = mesh.children.find(c => c.name === wfName);
@@ -93,6 +97,83 @@ export class ObjectManager {
                 processMesh(child);
             }
         });
+
+        // Handle fill mesh for closed bezier shapes
+        // Always remove existing fill mesh first (to reflect geometry or material changes)
+        const existingFill = object.children.find(c => c.name === fillName);
+        if (existingFill) {
+            object.remove(existingFill);
+            if (existingFill instanceof THREE.Mesh) {
+                existingFill.geometry.dispose();
+                if (Array.isArray(existingFill.material)) {
+                    existingFill.material.forEach(m => m.dispose());
+                } else {
+                    existingFill.material.dispose();
+                }
+            }
+        }
+
+        // In solid mode, create a new fill mesh from the bezier contour
+        if (!params.wireframe) {
+            const fillMesh = this.generateFillMesh(object, params);
+            if (fillMesh) object.add(fillMesh);
+        }
+    }
+
+    private generateFillMesh(object: THREE.Object3D, params: any): THREE.Mesh | null {
+        // Only generate fill for closed shapes
+        if (!object.userData.isClosed) return null;
+
+        // Collect non-offset bezier segments in their original (contour) order
+        const segments = object.children.filter(c =>
+            c.userData.type === 'bezier_line' && !c.userData.isOffset
+        );
+
+        if (segments.length < 3) return null;
+
+        // Collect contour points in shape-local XZ space
+        const contourPoints: THREE.Vector2[] = [];
+
+        for (const seg of segments) {
+            const curveMesh = seg.children.find((c: any) => c.userData.isCurve) as THREE.Line;
+            if (!curveMesh?.geometry?.attributes?.position) continue;
+
+            const pos = curveMesh.geometry.attributes.position;
+
+            // Segments are always added in connected order (end of seg[i] = start of seg[i+1]),
+            // so concatenating their points forms a valid closed contour.
+            // Skip the last point of each segment to avoid duplicates at joints.
+            for (let i = 0; i < pos.count - 1; i++) {
+                // Shapes live in the XZ plane (Y ≈ 0); map X→X, Z→Y for THREE.Shape (2D)
+                contourPoints.push(new THREE.Vector2(pos.getX(i), pos.getZ(i)));
+            }
+        }
+
+        if (contourPoints.length < 3) return null;
+
+        const shape = new THREE.Shape(contourPoints);
+        const geometry = new THREE.ShapeGeometry(shape);
+
+        // THREE.ShapeGeometry is in the XY plane; rotate it into the XZ plane
+        geometry.rotateX(-Math.PI / 2);
+
+        const opacity = params.opacity !== undefined ? params.opacity : 1;
+        const material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(params.color || '#cccccc'),
+            side: THREE.DoubleSide,
+            opacity: opacity,
+            transparent: opacity < 1,
+            depthWrite: opacity >= 1,
+            roughness: params.roughness !== undefined ? params.roughness : 0.5,
+            metalness: params.metalness !== undefined ? params.metalness : 0.1,
+            flatShading: params.flatShading !== undefined ? params.flatShading : false,
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.name = 'Visual_Fill';
+        mesh.userData.isGeneratedVisual = true;
+
+        return mesh;
     }
 
     private sanitizeObjects() {
