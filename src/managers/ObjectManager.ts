@@ -45,7 +45,7 @@ export class ObjectManager {
 
             // Update Material
             const mat = mesh.material as any;
-            if (mat && (mat.isMeshStandardMaterial || mat.isMeshPhongMaterial)) {
+            if (mat && (mat.isMeshStandardMaterial || mat.isMeshPhongMaterial || mat.isMeshBasicMaterial)) {
                 if (params.color) mat.color.set(params.color);
                 if (params.roughness !== undefined && mat.roughness !== undefined) mat.roughness = params.roughness;
                 if (params.metalness !== undefined && mat.metalness !== undefined) mat.metalness = params.metalness;
@@ -55,7 +55,7 @@ export class ObjectManager {
                     mat.depthWrite = params.opacity >= 1;
                     mat.needsUpdate = true;
                 }
-                if (params.flatShading !== undefined) {
+                if (params.flatShading !== undefined && mat.flatShading !== undefined) {
                     mat.flatShading = params.flatShading;
                     mat.needsUpdate = true;
                 }
@@ -158,20 +158,19 @@ export class ObjectManager {
         geometry.rotateX(-Math.PI / 2);
 
         const opacity = params.opacity !== undefined ? params.opacity : 1;
-        const material = new THREE.MeshStandardMaterial({
+        // Use MeshBasicMaterial for reliable visibility regardless of lighting conditions
+        const material = new THREE.MeshBasicMaterial({
             color: new THREE.Color(params.color || '#cccccc'),
             side: THREE.DoubleSide,
             opacity: opacity,
             transparent: opacity < 1,
             depthWrite: opacity >= 1,
-            roughness: params.roughness !== undefined ? params.roughness : 0.5,
-            metalness: params.metalness !== undefined ? params.metalness : 0.1,
-            flatShading: params.flatShading !== undefined ? params.flatShading : false,
         });
 
         const mesh = new THREE.Mesh(geometry, material);
         mesh.name = 'Visual_Fill';
         mesh.userData.isGeneratedVisual = true;
+        mesh.frustumCulled = false;
 
         return mesh;
     }
@@ -280,6 +279,17 @@ export class ObjectManager {
              // Count existing objects of this type to determine number
              const count = this.objects.filter(o => o.userData.type === type).length + 1;
              object.name = `${prefix} ${count}`;
+        }
+        // Ensure materialParams is always initialized so the fill mesh can be generated immediately
+        if (!object.userData.materialParams && object.userData.type !== 'background_image') {
+            object.userData.materialParams = {
+                color: '#cccccc',
+                wireframe: false,
+                roughness: 0.5,
+                metalness: 0.1,
+                flatShading: false,
+                opacity: 1
+            };
         }
         this.scene.add(object);
         this.objects.push(object);
