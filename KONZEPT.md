@@ -12,20 +12,32 @@ Die Software ist in drei klar getrennte, unabhängige Schichten aufgeteilt, um K
 
 ### Layer 1: Frontend & CAM (Vite/TypeScript/Three.js)
 
-Dies ist die Kommandozentrale und die Schnittstelle zum Benutzer.
+Dies ist die Kommandozentrale und die Schnittstelle zum Benutzer. Die Architektur ist in klar definierte, voneinander entkoppelte Module aufgeteilt, um die Übersichtlichkeit und Wartbarkeit zu maximieren. Die `main.ts` dient dabei nur noch als Startpunkt, der die einzelnen Module lädt und miteinander verbindet.
 
-*   **Verantwortlichkeiten:**
-    *   Bild-Analyse: Zerlegung von Vorlagen in Farbauszüge.
-    *   Pfad-Generierung: Umwandlung der Farbauszüge in Vektorpfade für den Pinsel.
-    *   3D-Simulation: Visuelle Vorschau des gesamten Malprozesses zur Kollisionserkennung und Überprüfung.
-    *   G-Code-Generierung: Übersetzung der Pinselpfade in RepRapFirmware-kompatiblen G-Code.
-    *   Maschinensteuerung: Kommunikation mit der Firmware via Web-API (Duet Web Control) zum Starten und Überwachen des Drucks.
-*   **Wichtige Module (geplant in `src/`):**
-    *   `image-processing/`: Logik zur Bildverarbeitung.
-    *   `cam/`: G-Code-Export und Kinematik-Kompensation.
-    *   `simulation/`: Die Three.js-basierte 3D-Umgebung.
-    *   `network/`: API-Client für die Kommunikation mit dem Roboter.
-    *   `ui/`: Benutzeroberfläche.
+*   **Zentrales Konzept: Projekt-basiertes Speichern**
+    *   Der `managers/ProjectManager.ts` ist die zentrale Instanz für das Speichern und Laden.
+    *   Ein "Projekt" ist eine einzelne `.json`-Datei, die den **gesamten Zustand** der Anwendung enthält: das geladene Bild, eingestellte Filter, alle Maschinen- und Pinselparameter, sowie manuell hinzugefügte Zeichnungen.
+    *   Beim Speichern sammelt der `ProjectManager` die Daten von allen anderen Modulen. Beim Laden verteilt er die Daten an die entsprechenden Module.
+
+*   **Wichtige Module (in `src/app/`):**
+    *   `app/core.ts`: Initialisiert die globalen Kernelemente, die von allen anderen Modulen benötigt werden (z.B. die `THREE.Scene` und den zentralen `EventBus`).
+    *   `app/machine.ts`: Bündelt alles, was mit dem physischen Roboter und seinen Werkzeugen zu tun hat.
+        *   Verwaltung des Arbeitsbereichs (z.B. A4-Papier).
+        *   Verwaltung von Maschinen-Parametern (maximale Geschwindigkeit, Beschleunigung etc.).
+        *   **Pinsel-Verwaltung:** Speichern und Laden von mehreren Pinsel-Profilen (z.B. "Rundpinsel Gr. 8"). Enthält die Logik für den Pinsel-Editor.
+        *   Stellt den Pinsel und den Arbeitsbereich in der 3D-Vorschau dar.
+    *   `app/image.ts`: Verantwortlich für die Verarbeitung der Bildvorlage.
+        *   Laden des Originalbildes.
+        *   **Bildfilter:** Anwenden von Filtern wie Kontrast, Helligkeit, Weichzeichner etc. auf das Bild.
+        *   Zerlegung des gefilterten Bildes in Farbauszüge für den Malprozess.
+    *   `app/ui.ts`: Bündelt alle Aspekte der direkten Benutzerinteraktion.
+        *   Verwaltung der verschiedenen Ansichten (2D, 3D).
+        *   Initialisierung der Zeichen-Werkzeuge (`LineTool`, `CircleTool` etc.).
+        *   Verwaltung von UI-Panels und Fenstern (z.B. Einstellungs-Dialog).
+    *   `app/cam.ts`: Enthält die reine CAM-Logik.
+        *   Generierung von RepRapFirmware-kompatiblem G-Code aus den Pfaden.
+        *   Kinematik-Kompensation (z.B. für Servo-Bewegungen).
+    *   `network/`: API-Client für die Kommunikation mit der Roboter-Firmware (Duet Web Control).
 
 ### Layer 2: Firmware & Motion Control (RepRapFirmware auf BTT Octopus)
 
@@ -60,3 +72,20 @@ Dies ist das "Auge" des Systems, ein dedizierter Microservice für die hochpräz
 *   **Konstante Z-Höhe:** Ein mechanisches System (federgedrückter Papierblock) stellt sicher, dass die Papieroberfläche immer auf der gleichen Z-Höhe bleibt, unabhängig von der Anzahl der Blätter. Dies vereinfacht die Software-Logik erheblich.
 *   **Nocken-Kinematik Kompensation:** Die Drehbewegung des Servos für den Pinselhub ist nicht linear zur vertikalen Z-Bewegung. Die CAM-Software (Layer 1) muss dies kompensieren und den gewünschten Z-Hub in den korrekten Servo-Winkel umrechnen, bevor der G-Code erzeugt wird.
 *   **Hydrostatischer Pinsel:** Ein Wassertankpinsel mit einem Belüftungsloch im Tankdeckel sorgt für einen passiven, gleichmäßigen Wasserfluss ohne aktive Pumpen.
+
+## 4. Projekt-Speicherung: Das Herzstück der Anwendung
+
+Ein zentrales Feature von Aqua-Davinci ist die Fähigkeit, eine komplette Arbeitssitzung als einzelnes "Projekt" zu speichern und zu laden. Dies wird durch den `ProjectManager` realisiert.
+
+*   **Projekt-Datei:** Ein Projekt wird als eine einzelne `.json`-Datei gespeichert. Diese Datei ist eine Momentaufnahme aller relevanten Einstellungen und Daten zum Zeitpunkt des Speicherns.
+
+*   **Was wird gespeichert?**
+    *   **Bild & Filter:** Der Pfad zur Original-Bilddatei sowie die genauen Einstellungen aller angewendeten Bildfilter (z.B. `kontrast: 1.2`, `weichzeichner: 0.5px`).
+    *   **Maschinen-Setup:** Alle globalen Maschinen-Parameter (z.B. maximale Fahrgeschwindigkeit).
+    *   **Pinsel-Profil:** Das aktuell ausgewählte und konfigurierte Pinselprofil, inklusive aller Parameter aus dem Pinsel-Editor.
+    *   **Manuelle Zeichnungen:** Alle vom Benutzer manuell hinzugefügten Vektor-Objekte (Linien, Kreise etc.) inklusive ihrer Position und Größe.
+    *   **UI-Zustand:** Position und Zustand von Fenstern oder UI-Elementen, falls relevant.
+
+*   **Ablauf (Speichern & Laden):**
+    1.  **Speichern:** Der Benutzer klickt auf "Speichern". Der `ProjectManager` sendet ein Event über den `EventBus` (z.B. `collect-project-data`). Alle Module (`machine`, `image`, `ui`) lauschen auf dieses Event, sammeln ihre relevanten Daten und senden sie an den `ProjectManager` zurück. Dieser bündelt alles in einem JSON-Objekt und initiiert den Download der Datei.
+    2.  **Laden:** Der Benutzer wählt eine Projekt-`.json`-Datei aus. Der `ProjectManager` liest die Datei und sendet gezielte Events an die Module (z.B. `load-machine-profile`, `apply-image-filters`). Jedes Modul ist dafür verantwortlich, seinen Zustand gemäß den Daten aus der Projekt-Datei wiederherzustellen.

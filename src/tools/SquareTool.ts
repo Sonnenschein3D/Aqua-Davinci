@@ -27,7 +27,7 @@ export class SquareTool extends BaseTool implements Tool {
 
     deactivate() {
         this.drawing = false;
-        this.setCameraLock(false);
+        this.viewManager.setControlsEnabled(true);
         this.removePreview();
     }
 
@@ -43,13 +43,13 @@ export class SquareTool extends BaseTool implements Tool {
         if (!this.drawing) {
             // First Click: Start Drawing
             this.drawing = true;
-            this.setCameraLock(true); 
+            this.viewManager.setControlsEnabled(false); 
             this.startPoint.copy(point);
             this.createPreview(point);
         } else {
             // Second Click: Finish Drawing
             this.drawing = false;
-            this.setCameraLock(false);
+            this.viewManager.setControlsEnabled(true);
             
             // Finalize
             if (this.previewObject) {

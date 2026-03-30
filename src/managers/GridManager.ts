@@ -27,7 +27,7 @@ const fragmentShader = `
     } else if (axis == 1) { // FRONT
         coord = worldPosition.xy;
     } else { // LEFT
-        coord = worldPosition.yz;
+        coord = worldPosition.zy;
     }
     
     vec2 grid = abs(fract(coord / size - 0.5) - 0.5) / fwidth(coord / size);
@@ -55,10 +55,10 @@ function createGridMaterial(axis: number, step: number, majorStep: number): THRE
     return new THREE.ShaderMaterial({
         vertexShader,
         fragmentShader,
-        transparent: true,
+        transparent: false,
+        alphaTest: 0.1,
         side: THREE.DoubleSide,
         depthWrite: false,
-        depthTest: false,
         uniforms: {
             size1: { value: step },
             size2: { value: majorStep },
@@ -110,7 +110,7 @@ export class GridManager {
         this.scene.add(this.gridFront);
 
         // --- Left Grid (YZ Plane) ---
-        const leftGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE, 1, 1).rotateY(-Math.PI / 2);
+        const leftGeo = new THREE.PlaneGeometry(GRID_SIZE, GRID_SIZE, 1, 1).rotateY(Math.PI / 2);
         const leftMat = createGridMaterial(2, this.stepSize, this.majorStep);
         this.gridLeft = new THREE.Mesh(leftGeo, leftMat);
         this.gridLeft.position.x = -0.05;

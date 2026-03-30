@@ -11,21 +11,23 @@ export class CircleTool extends BaseTool implements Tool {
     id = 'circle';
     private startPoint: THREE.Vector3 | null = null;
     private previewObject: THREE.Object3D | null = null;
+    private viewManager: ViewManager;
 
-    constructor(eventBus: EventBus, _viewManager: ViewManager, objectManager: ObjectManager) {
+    constructor(eventBus: EventBus, viewManager: ViewManager, objectManager: ObjectManager) {
         super(eventBus, objectManager);
+        this.viewManager = viewManager;
     }
 
     activate() { this.resetState(); }
     deactivate() { 
         this.cancel();
-        this.setCameraLock(false);
+        this.viewManager.setControlsEnabled(true);
     }
 
     onPointerDown(event: InteractionEvent) {
         if (event.originalEvent.button !== 0) { 
             this.cancel(); 
-            this.setCameraLock(false);
+            this.viewManager.setControlsEnabled(true);
             return; 
         }
         if (!event.intersection) return;
@@ -36,7 +38,7 @@ export class CircleTool extends BaseTool implements Tool {
         if (!this.previewObject) {
             this.startPoint = pos;
             this.createPreviewObject(pos);
-            this.setCameraLock(true);
+            this.viewManager.setControlsEnabled(false);
         } else {
             const radius = pos.distanceTo(this.startPoint!);
             const center = this.previewObject.position.clone();
@@ -46,7 +48,7 @@ export class CircleTool extends BaseTool implements Tool {
             this.objectManager.removeObject(this.previewObject);
             this.previewObject = null;
             this.startPoint = null;
-            this.setCameraLock(false);
+            this.viewManager.setControlsEnabled(true);
             
             // Create final clean object
             const finalObj = ShapeFactory.createShape('circle', center);

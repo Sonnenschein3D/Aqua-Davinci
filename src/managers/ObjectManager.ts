@@ -156,7 +156,7 @@ export class ObjectManager {
         const geometry = new THREE.ShapeGeometry(shape);
 
         // THREE.ShapeGeometry is in the XY plane; rotate it into the XZ plane
-        geometry.rotateX(-Math.PI / 2);
+        geometry.rotateX(Math.PI / 2);
 
         const opacity = Math.round((params.opacity !== undefined ? params.opacity : 1) * 100) / 100;
         // Use MeshBasicMaterial for reliable visibility regardless of lighting conditions

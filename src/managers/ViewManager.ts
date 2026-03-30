@@ -122,10 +122,6 @@ export class ViewManager {
             this.currentToolId = toolId;
             this.updateControlsMode();
         });
-
-        this._eventBus.on('camera-controls-lock', (locked: boolean) => {
-            this.setControlsEnabled(!locked);
-        });
     }
 
     public showToast(message: string, duration: number = 3000) {

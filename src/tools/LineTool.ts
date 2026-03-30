@@ -16,15 +16,17 @@ export class LineTool extends BaseTool implements Tool {
     private draftGroup: THREE.Group | null = null;
     private draftMovingNode: THREE.Object3D | null = null;
     private lastFixedNode: THREE.Object3D | null = null;
+    private viewManager: ViewManager;
 
-    constructor(eventBus: EventBus, _viewManager: ViewManager, objectManager: ObjectManager) {
+    constructor(eventBus: EventBus, viewManager: ViewManager, objectManager: ObjectManager) {
         super(eventBus, objectManager);
+        this.viewManager = viewManager;
     }
 
     activate() { this.resetState(); }
     deactivate() { 
         this.finishPath();
-        this.setCameraLock(false);
+        this.viewManager.setControlsEnabled(true);
     }
 
     onPointerDown(event: InteractionEvent) {
@@ -45,7 +47,7 @@ export class LineTool extends BaseTool implements Tool {
         this.updateDraft(pos);
         
         if (this.points.length === 1) {
-             this.setCameraLock(true);
+             this.viewManager.setControlsEnabled(false);
         }
     }
 
@@ -118,7 +120,7 @@ export class LineTool extends BaseTool implements Tool {
                 finalObject.userData.type = 'line';
                 this.objectManager.addObject(finalObject);
 
-                this.setCameraLock(false);
+                this.viewManager.setControlsEnabled(true);
                 this.resetState();
 
                 // Select it
@@ -131,7 +133,7 @@ export class LineTool extends BaseTool implements Tool {
             }
         }
 
-        this.setCameraLock(false);
+        this.viewManager.setControlsEnabled(true);
         this.resetState();
     }
 
