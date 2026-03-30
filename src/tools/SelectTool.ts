@@ -586,14 +586,6 @@ export class SelectTool extends BaseTool implements Tool {
         });
     }
 
-    private _raycastObject(event: InteractionEvent, object: THREE.Object3D): THREE.Intersection | null {
-        const cam = this.viewManager.getActiveCamera();
-        if (!cam) return null;
-        this.raycaster.setFromCamera(event.pointer, cam);
-        const intersects = this.raycaster.intersectObject(object, true);
-        return intersects.length > 0 ? intersects[0] : null;
-    }
-
     private startGizmoDrag(axis: string, hitPoint: THREE.Vector3) {
         this.isDragging = true;
         this.dragMode = 'gizmo';
