@@ -292,6 +292,7 @@ export class ObjectManager {
                 opacity: 1
             };
         }
+        object.userData.isSelectableRoot = true;
         this.scene.add(object);
         this.objects.push(object);
         if (select) {
