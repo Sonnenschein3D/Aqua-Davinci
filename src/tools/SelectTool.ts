@@ -320,12 +320,11 @@ export class SelectTool extends BaseTool implements Tool {
         const cam = this.viewManager.getActiveCamera();
         if (!cam) return;
 
-        // Convert current and drag start pointer coordinates to NDC (-1 to 1)
-        // Y-coordinates need to be inverted for Three.js (NDC Y goes from -1 (bottom) to 1 (top))
-        const ndcStartX = this.dragStartPosition.x * 2 - 1;
-        const ndcStartY = -(this.dragStartPosition.y * 2 - 1);
-        const ndcCurrentX = event.pointer.x * 2 - 1;
-        const ndcCurrentY = -(event.pointer.y * 2 - 1);
+        // pointer coordinates are already in NDC space (-1 to 1), no conversion needed
+        const ndcStartX = this.dragStartPosition.x;
+        const ndcStartY = this.dragStartPosition.y;
+        const ndcCurrentX = event.pointer.x;
+        const ndcCurrentY = event.pointer.y;
 
         // Define the four corners of the selection rectangle in NDC space at the near plane (-1 for Z)
         const pNDC1 = new THREE.Vector3(ndcStartX, ndcStartY, -1); // Start point
@@ -484,10 +483,10 @@ export class SelectTool extends BaseTool implements Tool {
         const cam = this.viewManager.getActiveCamera();
         if (!cam) return;
 
-        // Ensure selection rectangle has valid dimensions (minX, maxX, minY, maxY are screen coords 0-1)
+        // dragStartPosition and event.pointer are already in NDC space (-1 to 1)
         const minX = Math.min(this.dragStartPosition.x, event.pointer.x);
         const maxX = Math.max(this.dragStartPosition.x, event.pointer.x);
-        const minY = Math.min(this.dragStartPosition.y, event.pointer.y); // Screen Y: 0 is top, 1 is bottom
+        const minY = Math.min(this.dragStartPosition.y, event.pointer.y);
         const maxY = Math.max(this.dragStartPosition.y, event.pointer.y);
 
         // If no drag (single click), deselect all
@@ -528,12 +527,8 @@ export class SelectTool extends BaseTool implements Tool {
                 // Project corner to Normalized Device Coordinates (NDC)
                 v.copy(corner).project(cam);
 
-                // Convert NDC to screen coordinates (0 to 1)
-                const screenX = (v.x + 1) / 2;
-                const screenY = (-v.y + 1) / 2; // Invert Y for screen coordinates
-
-                // Check if this corner is inside the 2D selection rectangle
-                if (screenX >= minX && screenX <= maxX && screenY >= minY && screenY <= maxY) {
+                // Check if this corner is inside the 2D selection rectangle (both in NDC space)
+                if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
                     anyCornerInside = true;
                 } else {
                     // At least one corner is outside
