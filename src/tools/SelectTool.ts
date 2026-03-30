@@ -102,6 +102,7 @@ export class SelectTool extends BaseTool implements Tool {
         this.selectionMarquee = new THREE.LineLoop( geometry, material );
         this.selectionMarquee.visible = false;
         this.selectionMarquee.renderOrder = 999; // Ensure it's drawn on top
+        this.selectionMarquee.frustumCulled = false; // Vertices at the near-plane boundary would otherwise get culled
         scene.add(this.selectionMarquee);
 
         this.eventBus.on('selection-changed', (selected: THREE.Object3D[]) => {
