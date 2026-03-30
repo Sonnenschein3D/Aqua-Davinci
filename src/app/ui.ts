@@ -1,6 +1,7 @@
 import { EventBus } from '../core/EventBus';
 import { ObjectManager } from '../managers/ObjectManager';
 import { ViewManager } from '../managers/ViewManager';
+import * as THREE from 'three';
 import { Scene } from 'three';
 import { UIManager } from '../managers/UIManager';
 import { RulerManager } from '../managers/RulerManager';

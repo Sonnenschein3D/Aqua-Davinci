@@ -523,7 +523,6 @@ export class SelectTool extends BaseTool implements Tool {
             ];
 
             let anyCornerInside = false;
-            let allCornersOutside = true;
 
             for (const corner of corners) {
                 // Project corner to Normalized Device Coordinates (NDC)
@@ -537,7 +536,7 @@ export class SelectTool extends BaseTool implements Tool {
                 if (screenX >= minX && screenX <= maxX && screenY >= minY && screenY <= maxY) {
                     anyCornerInside = true;
                 } else {
-                    allCornersOutside = false; // At least one corner is outside
+                    // At least one corner is outside
                 }
             }
 
@@ -587,7 +586,7 @@ export class SelectTool extends BaseTool implements Tool {
         });
     }
 
-    private raycastObject(event: InteractionEvent, object: THREE.Object3D): THREE.Intersection | null {
+    private _raycastObject(event: InteractionEvent, object: THREE.Object3D): THREE.Intersection | null {
         const cam = this.viewManager.getActiveCamera();
         if (!cam) return null;
         this.raycaster.setFromCamera(event.pointer, cam);
@@ -872,9 +871,6 @@ export class SelectTool extends BaseTool implements Tool {
             if (parent) {
                 const newLocalPos = newPos.clone();
                 parent.worldToLocal(newLocalPos);
-
-                const oldNodePos = this.selectedSubObject.position.clone();
-                const delta = newLocalPos.clone().sub(oldNodePos);
                 
                 this.selectedSubObject.position.copy(newLocalPos);
                 
@@ -888,7 +884,6 @@ export class SelectTool extends BaseTool implements Tool {
                     parent.children.forEach(child => {
                         if (child.userData.type === 'bezier_line' && child.userData.isLinked && child.userData.nodes) {
                             const nodes = child.userData.nodes;
-                            const helpers = child.userData.helpers;
                             
                             const isStart = nodes.start === this.selectedSubObject;
                             const isEnd = nodes.end === this.selectedSubObject;

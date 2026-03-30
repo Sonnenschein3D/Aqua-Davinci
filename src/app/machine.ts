@@ -6,7 +6,6 @@ import { Robot } from '../core/Robot';
 import { DavinciPinsel1 } from '../ui/DavinciPinsel1';
 import { CustomAxesHelper } from '../helpers/CustomAxesHelper';
 import { GridManager } from '../managers/GridManager';
-import { ToolManager } from '../tools/ToolManager';
 
 // Define the structure for the brush state
 interface BrushState {
