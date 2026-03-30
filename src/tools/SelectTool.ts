@@ -41,8 +41,9 @@ export class SelectTool extends BaseTool implements Tool {
     private activeSubObjectOriginalColor: number | null = null;
 
     // Marquee Selection variables
-    private selectionMarquee: THREE.LineLoop;
-    private dragStartPosition: THREE.Vector2 = new THREE.Vector2(); // Screen coordinates
+    private selectionMarqueeDiv: HTMLDivElement;
+    private dragStartPosition: THREE.Vector2 = new THREE.Vector2(); // NDC coordinates for selection logic
+    private dragStartScreen: { x: number; y: number } = { x: 0, y: 0 }; // Screen coordinates for div
 
     constructor(eventBus: EventBus, viewManager: ViewManager, objectManager: ObjectManager, machineBrush: DavinciPinsel1) {
         super(eventBus, objectManager);
@@ -89,21 +90,11 @@ export class SelectTool extends BaseTool implements Tool {
         scene.add(this.translateGizmo);
         scene.add(this.rotateGizmo);
 
-        // Initialize selection marquee
-        const points = [];
-        points.push( new THREE.Vector3( 0, 0, 0 ) );
-        points.push( new THREE.Vector3( 1, 0, 0 ) );
-        points.push( new THREE.Vector3( 1, 1, 0 ) );
-        points.push( new THREE.Vector3( 0, 1, 0 ) );
-        points.push( new THREE.Vector3( 0, 0, 0 ) ); // Close the loop
-
-        const geometry = new THREE.BufferGeometry().setFromPoints( points );
-        const material = new THREE.LineBasicMaterial( { color: 0x00aaff, depthTest: false, depthWrite: false } );
-        this.selectionMarquee = new THREE.LineLoop( geometry, material );
-        this.selectionMarquee.visible = false;
-        this.selectionMarquee.renderOrder = 999; // Ensure it's drawn on top
-        this.selectionMarquee.frustumCulled = false; // Vertices at the near-plane boundary would otherwise get culled
-        scene.add(this.selectionMarquee);
+        // Initialize selection marquee as a 2D CSS overlay div (more reliable than a 3D LineLoop)
+        this.selectionMarqueeDiv = document.createElement('div');
+        this.selectionMarqueeDiv.style.cssText =
+            'position:fixed;border:1px solid #00aaff;pointer-events:none;display:none;box-sizing:border-box;';
+        document.body.appendChild(this.selectionMarqueeDiv);
 
         this.eventBus.on('selection-changed', (selected: THREE.Object3D[]) => {
             if (selected.length === 1) {
@@ -136,6 +127,7 @@ export class SelectTool extends BaseTool implements Tool {
         this.translateGizmo.visible = false;
         this.rotateGizmo.visible = false;
         this.selectedObject = null;
+        this.selectionMarqueeDiv.style.display = 'none';
     }
 
     private updateGizmo() {
@@ -290,12 +282,19 @@ export class SelectTool extends BaseTool implements Tool {
     private startMarqueeSelection(event: InteractionEvent) {
         this.isDragging = true;
         this.dragMode = 'marquee_select';
-        this.dragStartPosition.copy(event.pointer); // Store 2D screen coordinates
+        this.dragStartPosition.copy(event.pointer); // NDC coords for selection logic
 
-        if (this.selectionMarquee) {
-            this.selectionMarquee.visible = true;
-            // Position and scale will be updated in handleMarqueeSelectionDrag
-        }
+        // Store screen coords for the visual div
+        this.dragStartScreen.x = event.originalEvent.clientX;
+        this.dragStartScreen.y = event.originalEvent.clientY;
+
+        // Show the div at the starting position with zero size
+        const div = this.selectionMarqueeDiv;
+        div.style.left   = this.dragStartScreen.x + 'px';
+        div.style.top    = this.dragStartScreen.y + 'px';
+        div.style.width  = '0px';
+        div.style.height = '0px';
+        div.style.display = 'block';
 
         // Deselect everything when starting a new selection
         this.objectManager.deselectAll();
@@ -316,42 +315,15 @@ export class SelectTool extends BaseTool implements Tool {
     }
 
     private handleMarqueeSelectionDrag(event: InteractionEvent) {
-        if (!this.selectionMarquee) return;
+        const x1 = this.dragStartScreen.x;
+        const y1 = this.dragStartScreen.y;
+        const x2 = event.originalEvent.clientX;
+        const y2 = event.originalEvent.clientY;
 
-        const cam = this.viewManager.getActiveCamera();
-        if (!cam) return;
-
-        // pointer coordinates are already in NDC space (-1 to 1), no conversion needed
-        const ndcStartX = this.dragStartPosition.x;
-        const ndcStartY = this.dragStartPosition.y;
-        const ndcCurrentX = event.pointer.x;
-        const ndcCurrentY = event.pointer.y;
-
-        // Define the four corners of the selection rectangle in NDC space at the near plane (-1 for Z)
-        const pNDC1 = new THREE.Vector3(ndcStartX, ndcStartY, -1); // Start point
-        const pNDC2 = new THREE.Vector3(ndcCurrentX, ndcStartY, -1); // horizontal line
-        const pNDC3 = new THREE.Vector3(ndcCurrentX, ndcCurrentY, -1); // vertical line
-        const pNDC4 = new THREE.Vector3(ndcStartX, ndcCurrentY, -1); // horizontal line
-
-        // Unproject these NDC coordinates to get world coordinates on the near plane
-        // Note: unproject modifies the vector itself, so we clone it first
-        const worldP1 = pNDC1.clone().unproject(cam);
-        const worldP2 = pNDC2.clone().unproject(cam);
-        const worldP3 = pNDC3.clone().unproject(cam);
-        const worldP4 = pNDC4.clone().unproject(cam);
-
-        // Update the LineLoop's vertices
-        const positions = (this.selectionMarquee.geometry.attributes.position as THREE.BufferAttribute);
-        const positionArray = positions.array as Float32Array;
-
-        positionArray[0] = worldP1.x; positionArray[1] = worldP1.y; positionArray[2] = worldP1.z; // Point 0 (start)
-        positionArray[3] = worldP2.x; positionArray[4] = worldP2.y; positionArray[5] = worldP2.z; // Point 1
-        positionArray[6] = worldP3.x; positionArray[7] = worldP3.y; positionArray[8] = worldP3.z; // Point 2
-        positionArray[9] = worldP4.x; positionArray[10] = worldP4.y; positionArray[11] = worldP4.z; // Point 3
-        positionArray[12] = worldP1.x; positionArray[13] = worldP1.y; positionArray[14] = worldP1.z; // Point 4 (close loop)
-
-        positions.needsUpdate = true; // Tell Three.js to re-upload buffer data
-        this.selectionMarquee.geometry.computeBoundingSphere(); // Update bounding sphere for culling etc.
+        this.selectionMarqueeDiv.style.left   = Math.min(x1, x2) + 'px';
+        this.selectionMarqueeDiv.style.top    = Math.min(y1, y2) + 'px';
+        this.selectionMarqueeDiv.style.width  = Math.abs(x2 - x1) + 'px';
+        this.selectionMarqueeDiv.style.height = Math.abs(y2 - y1) + 'px';
     }
 
 
@@ -451,9 +423,7 @@ export class SelectTool extends BaseTool implements Tool {
         // Handle marquee selection logic
         if (this.dragMode === 'marquee_select') {
             this.handleMarqueeSelectionEnd(event); // New method to process selection
-            if (this.selectionMarquee) {
-                this.selectionMarquee.visible = false; // Hide marquee
-            }
+            this.selectionMarqueeDiv.style.display = 'none'; // Hide marquee
         }
         
         this.dragMode = 'none'; // Reset drag mode after processing
@@ -522,29 +492,25 @@ export class SelectTool extends BaseTool implements Tool {
                 new THREE.Vector3(bbox.max.x, bbox.max.y, bbox.max.z)
             ];
 
-            let anyCornerInside = false;
+            // Project all 8 corners to NDC and find the 2D screen-space bounding box
+            let projMinX = Infinity, projMaxX = -Infinity;
+            let projMinY = Infinity, projMaxY = -Infinity;
 
             for (const corner of corners) {
-                // Project corner to Normalized Device Coordinates (NDC)
                 v.copy(corner).project(cam);
-
-                // Check if this corner is inside the 2D selection rectangle (both in NDC space)
-                if (v.x >= minX && v.x <= maxX && v.y >= minY && v.y <= maxY) {
-                    anyCornerInside = true;
-                } else {
-                    // At least one corner is outside
-                }
+                // project() can produce NaN for degenerate cases (e.g. points exactly at camera origin)
+                if (isNaN(v.x) || isNaN(v.y)) continue;
+                projMinX = Math.min(projMinX, v.x);
+                projMaxX = Math.max(projMaxX, v.x);
+                projMinY = Math.min(projMinY, v.y);
+                projMaxY = Math.max(projMaxY, v.y);
             }
 
-            // Selection Logic:
-            // If any corner is inside, we select the object. This is a common "any part of object in marquee" logic.
-            // A more strict "object fully contained" check would require all corners to be inside, and bbox intersection.
-            if (anyCornerInside) {
+            // Select the object if the selection rect and the object's projected bbox overlap (2D rect-rect test).
+            // This handles all cases: rect inside object, object inside rect, and partial overlap.
+            if (projMinX <= maxX && projMaxX >= minX && projMinY <= maxY && projMaxY >= minY) {
                 selectedObjects.push(obj);
             }
-            // An even more robust logic would involve converting the 2D selection rectangle into a frustum
-            // and checking if the object's world-space bounding box intersects with that frustum.
-            // This brute-force projection of corners is a good first step.
         }
 
         // Select the identified objects
