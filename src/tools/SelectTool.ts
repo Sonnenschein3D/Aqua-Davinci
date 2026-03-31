@@ -274,8 +274,11 @@ export class SelectTool extends BaseTool implements Tool {
              }
              this.objectManager.selectObject(target);
         } else {
-            // 5. Clicked on empty space - Start marquee selection
-            this.startMarqueeSelection(event);
+            // 5. Clicked on empty space - Start marquee selection (only in 2D views)
+            // In perspective view, let OrbitControls handle the drag for camera rotation
+            if (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE) {
+                this.startMarqueeSelection(event);
+            }
         }
     }
 
