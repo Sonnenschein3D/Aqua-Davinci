@@ -19,6 +19,7 @@ export class Toolbar {
     private projectNameDisplay!: HTMLElement;
     readonly debugConsole: DebugConsole;
     private selectButton!: HTMLButtonElement;
+    private orbitButton!: HTMLButtonElement;
     private isSelectToolActive: boolean = false;
     private perspectiveSelectMode: boolean = false;
 
@@ -145,7 +146,7 @@ export class Toolbar {
             cursor: 'pointer',
             border: '1px solid #555',
             background: '#333',
-            color: 'white',
+            color: '#888',
             borderRadius: '4px',
             transition: 'all 0.2s'
         });
@@ -329,6 +330,39 @@ export class Toolbar {
 
 
         // --- BOTTOM TOOLBAR CONTENT ---
+
+        // Center: Orbit Button
+        const centerBottom = document.createElement('div');
+        Object.assign(centerBottom.style, {
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+        });
+        this.bottomToolbar.appendChild(centerBottom);
+
+        this.orbitButton = document.createElement('button');
+        this.orbitButton.title = 'Kamera-Orbit (Perspektivansicht) – Selektion deaktiviert';
+        this.orbitButton.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:auto;">
+            <path d="M20 12 A 8 8 0 1 1 12 4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <polyline points="12,1 12,5 16,5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>`;
+        Object.assign(this.orbitButton.style, {
+            width: '25px',
+            height: '25px',
+            cursor: 'pointer',
+            border: '1px solid #555',
+            background: '#007acc',
+            color: 'white',
+            borderRadius: '4px',
+            transition: 'all 0.2s',
+            padding: '0',
+        });
+        this.orbitButton.onclick = () => {
+            this.eventBus.emit('perspective-mode-changed', 'orbit');
+        };
+        centerBottom.appendChild(this.orbitButton);
 
         // Spacer to push right
         const spacerBottom = document.createElement('div');
@@ -520,17 +554,29 @@ export class Toolbar {
     private updateSelectBtnState() {
         if (!this.selectButton) return;
         if (this.isSelectToolActive && this.perspectiveSelectMode) {
-            this.selectButton.style.background = '#cc7700';
-            this.selectButton.style.borderColor = '#ffaa00';
-            this.selectButton.title = 'Selektieren (V) – Auswahlmodus aktiv (Klick zum Deaktivieren)';
-        } else if (this.isSelectToolActive) {
             this.selectButton.style.background = '#007acc';
             this.selectButton.style.borderColor = '#00aaff';
-            this.selectButton.title = 'Selektieren (V) – Orbit-Modus (Klick für Auswahlmodus)';
+            this.selectButton.style.color = 'white';
+            this.selectButton.title = 'Selektieren (V) – Auswahlmodus aktiv';
         } else {
             this.selectButton.style.background = '#333';
             this.selectButton.style.borderColor = '#555';
+            this.selectButton.style.color = '#888';
             this.selectButton.title = 'Selektieren (V)';
+        }
+    }
+
+    private updateOrbitBtnState() {
+        if (!this.orbitButton) return;
+        const isOrbitActive = !this.perspectiveSelectMode;
+        if (isOrbitActive) {
+            this.orbitButton.style.background = '#007acc';
+            this.orbitButton.style.borderColor = '#00aaff';
+            this.orbitButton.style.color = 'white';
+        } else {
+            this.orbitButton.style.background = '#333';
+            this.orbitButton.style.borderColor = '#555';
+            this.orbitButton.style.color = '#888';
         }
     }
 
@@ -540,11 +586,13 @@ export class Toolbar {
             if (!this.isSelectToolActive) this.perspectiveSelectMode = false;
             this.updateActiveState(toolId);
             this.updateSelectBtnState();
+            this.updateOrbitBtnState();
         });
 
         this.eventBus.on('perspective-mode-changed', (mode: 'orbit' | 'select') => {
             this.perspectiveSelectMode = (mode === 'select');
             this.updateSelectBtnState();
+            this.updateOrbitBtnState();
         });
 
         this.eventBus.on('project-name-changed', (name: string) => {
