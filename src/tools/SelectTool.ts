@@ -300,7 +300,10 @@ export class SelectTool extends BaseTool implements Tool {
             // pointers from the start – this is required for smooth 2-finger pan and pinch-zoom.
             const isTouch = event.originalEvent.pointerType === 'touch';
             if (!isTouch && (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE || this.perspectiveSelectMode)) {
-                this.startMarqueeSelection(event);
+                this.startMarqueeSelection(event); // startMarqueeSelection calls deselectAll() internally
+            } else {
+                // Touch tap or perspective-orbit click on empty space: deselect all selected objects
+                this.objectManager.deselectAll();
             }
         }
     }
