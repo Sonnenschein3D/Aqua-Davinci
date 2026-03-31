@@ -50,4 +50,15 @@ setupImageProcessing(eventBus, objectManager, viewManager, toolManager);
     }
 };
 
+// Auto-start in fullscreen on first user interaction (browsers require a gesture)
+const requestFullscreenOnce = () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+    document.removeEventListener('click', requestFullscreenOnce);
+    document.removeEventListener('keydown', requestFullscreenOnce);
+};
+document.addEventListener('click', requestFullscreenOnce);
+document.addEventListener('keydown', requestFullscreenOnce);
+
 console.log('Aqua-Davinci App started (Modular Build)');

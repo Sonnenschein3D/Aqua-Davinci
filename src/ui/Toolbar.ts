@@ -259,6 +259,36 @@ export class Toolbar {
         rightGroup.style.cssText = "margin-left: auto; display: flex; align-items: center; gap: 10px;";
         this.topToolbar.appendChild(rightGroup);
 
+        // Fullscreen Toggle Button
+        const fullscreenBtn = document.createElement('button');
+        const updateFullscreenIcon = () => {
+            fullscreenBtn.innerHTML = document.fullscreenElement
+                ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:block;margin:auto;"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+                : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:block;margin:auto;"><path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            fullscreenBtn.title = document.fullscreenElement ? 'Vollbild beenden (F11)' : 'Vollbild (F11)';
+        };
+        Object.assign(fullscreenBtn.style, {
+            width: '25px',
+            height: '25px',
+            cursor: 'pointer',
+            border: '1px solid #555',
+            background: '#333',
+            color: 'white',
+            borderRadius: '4px',
+            transition: 'all 0.2s',
+            padding: '0',
+        });
+        fullscreenBtn.onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen().catch(() => {});
+            }
+        };
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        updateFullscreenIcon();
+        rightGroup.appendChild(fullscreenBtn);
+
         // --- View Options Group ---
         const viewGroup = document.createElement('div');
         viewGroup.style.cssText = "display: flex; align-items: center; gap: 5px; border-left: 1px solid #555; padding-left: 10px;";
