@@ -207,7 +207,22 @@ export class SelectTool extends BaseTool implements Tool {
         }
     }
 
+    private cancelMarqueeSelection() {
+        if (this.dragMode === 'marquee_select') {
+            this.isDragging = false;
+            this.dragMode = 'none';
+            this.selectionMarqueeDiv.style.display = 'none';
+        }
+    }
+
     onPointerDown(event: InteractionEvent) {
+        // If a second touch (non-primary) arrives, cancel any active marquee and let OrbitControls handle multi-touch zoom/pan
+        if (event.originalEvent.pointerType === 'touch' && !event.originalEvent.isPrimary) {
+            this.cancelMarqueeSelection();
+            this.viewManager.setControlsEnabled(true);
+            return;
+        }
+
         if (event.originalEvent.button !== 0) return;
         
         this.updateRaycasterThresholds();
