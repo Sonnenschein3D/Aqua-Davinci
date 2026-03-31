@@ -32,6 +32,7 @@ export class ViewManager {
     private resetButton: HTMLElement;
     private controls: OrbitControls | null = null;
     private currentToolId: string | null = null;
+    private perspectiveSelectMode: boolean = false;
 
     constructor(eventBus: EventBus, containerId: string, scene: THREE.Scene) {
         this._eventBus = eventBus;
@@ -119,7 +120,17 @@ export class ViewManager {
                     return; 
                 }
             }
+            // Reset perspective select mode when switching away from the select tool
+            if (toolId !== 'select' && this.perspectiveSelectMode) {
+                this.perspectiveSelectMode = false;
+                this._eventBus.emit('perspective-mode-changed', 'orbit');
+            }
             this.currentToolId = toolId;
+            this.updateControlsMode();
+        });
+
+        this._eventBus.on('perspective-mode-changed', (mode: 'orbit' | 'select') => {
+            this.perspectiveSelectMode = (mode === 'select');
             this.updateControlsMode();
         });
     }
@@ -358,7 +369,11 @@ export class ViewManager {
     private updateControlsMode() {
         if (!this.controls) return;
         const isSelectionTool = this.currentToolId === null || this.currentToolId === 'select';
-        if (isSelectionTool || this.activeView === ViewType.PERSPECTIVE) {
+        const isPerspective = this.activeView === ViewType.PERSPECTIVE;
+        if (isPerspective && this.perspectiveSelectMode) {
+            // Perspective select mode: disable left-button orbit so marquee can work
+            this.controls.mouseButtons = { LEFT: null as any, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN } as any;
+        } else if (isSelectionTool || isPerspective) {
             this.controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN } as any;
         } else {
             this.controls.mouseButtons = { LEFT: null as any, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN } as any;

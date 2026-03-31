@@ -18,6 +18,9 @@ export class Toolbar {
     private projectFileInput!: HTMLInputElement;
     private projectNameDisplay!: HTMLElement;
     readonly debugConsole: DebugConsole;
+    private selectButton!: HTMLButtonElement;
+    private isSelectToolActive: boolean = false;
+    private perspectiveSelectMode: boolean = false;
 
             constructor(eventBus: EventBus) {
                 this.eventBus = eventBus;
@@ -130,8 +133,34 @@ export class Toolbar {
         sepTop.style.cssText = "width: 1px; height: 20px; background: #555; margin: 0 5px;";
         this.topToolbar.appendChild(sepTop);
 
-        // 2. Select Button
-        this.addButton('select', '➤', 'Selektieren (V)', this.topToolbar);
+        // 2. Select Button - toggle button that switches between orbit and selection mode in perspective view
+        this.selectButton = document.createElement('button');
+        this.selectButton.innerHTML = '➤';
+        this.selectButton.title = 'Selektieren (V)';
+        this.selectButton.dataset.id = 'select';
+        Object.assign(this.selectButton.style, {
+            width: '25px',
+            height: '25px',
+            fontSize: '14px',
+            cursor: 'pointer',
+            border: '1px solid #555',
+            background: '#333',
+            color: 'white',
+            borderRadius: '4px',
+            transition: 'all 0.2s'
+        });
+        this.selectButton.onclick = (e) => {
+            e.stopPropagation();
+            if (!this.isSelectToolActive) {
+                // Activate select tool (resets perspective mode to orbit via ViewManager)
+                this.eventBus.emit('tool-selected', 'select');
+            } else {
+                // Already active: toggle perspective orbit/select mode
+                const newMode = this.perspectiveSelectMode ? 'orbit' : 'select';
+                this.eventBus.emit('perspective-mode-changed', newMode);
+            }
+        };
+        this.topToolbar.appendChild(this.selectButton);
 
         // 3. Snap Button
         const snapBtn = document.createElement('button');
@@ -488,9 +517,34 @@ export class Toolbar {
         container.appendChild(btn);
     }
 
+    private updateSelectBtnState() {
+        if (!this.selectButton) return;
+        if (this.isSelectToolActive && this.perspectiveSelectMode) {
+            this.selectButton.style.background = '#cc7700';
+            this.selectButton.style.borderColor = '#ffaa00';
+            this.selectButton.title = 'Selektieren (V) – Auswahlmodus aktiv (Klick zum Deaktivieren)';
+        } else if (this.isSelectToolActive) {
+            this.selectButton.style.background = '#007acc';
+            this.selectButton.style.borderColor = '#00aaff';
+            this.selectButton.title = 'Selektieren (V) – Orbit-Modus (Klick für Auswahlmodus)';
+        } else {
+            this.selectButton.style.background = '#333';
+            this.selectButton.style.borderColor = '#555';
+            this.selectButton.title = 'Selektieren (V)';
+        }
+    }
+
     private initListeners() {
         this.eventBus.on('tool-active-changed', (toolId: string | null) => {
+            this.isSelectToolActive = (toolId === 'select');
+            if (!this.isSelectToolActive) this.perspectiveSelectMode = false;
             this.updateActiveState(toolId);
+            this.updateSelectBtnState();
+        });
+
+        this.eventBus.on('perspective-mode-changed', (mode: 'orbit' | 'select') => {
+            this.perspectiveSelectMode = (mode === 'select');
+            this.updateSelectBtnState();
         });
 
         this.eventBus.on('project-name-changed', (name: string) => {

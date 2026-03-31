@@ -44,6 +44,7 @@ export class SelectTool extends BaseTool implements Tool {
     private selectionMarqueeDiv: HTMLDivElement;
     private dragStartPosition: THREE.Vector2 = new THREE.Vector2(); // NDC coordinates for selection logic
     private dragStartScreen: { x: number; y: number } = { x: 0, y: 0 }; // Screen coordinates for div
+    private perspectiveSelectMode: boolean = false;
 
     constructor(eventBus: EventBus, viewManager: ViewManager, objectManager: ObjectManager, machineBrush: DavinciPinsel1) {
         super(eventBus, objectManager);
@@ -95,6 +96,10 @@ export class SelectTool extends BaseTool implements Tool {
         this.selectionMarqueeDiv.style.cssText =
             'position:fixed;border:1px solid #00aaff;pointer-events:none;display:none;box-sizing:border-box;';
         document.body.appendChild(this.selectionMarqueeDiv);
+
+        this.eventBus.on('perspective-mode-changed', (mode: 'orbit' | 'select') => {
+            this.perspectiveSelectMode = (mode === 'select');
+        });
 
         this.eventBus.on('selection-changed', (selected: THREE.Object3D[]) => {
             if (selected.length === 1) {
@@ -274,9 +279,9 @@ export class SelectTool extends BaseTool implements Tool {
              }
              this.objectManager.selectObject(target);
         } else {
-            // 5. Clicked on empty space - Start marquee selection (only in 2D views)
-            // In perspective view, let OrbitControls handle the drag for camera rotation
-            if (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE) {
+            // 5. Clicked on empty space - Start marquee selection (only in 2D views, or perspective when in select mode)
+            // In perspective orbit mode, let OrbitControls handle the drag for camera rotation
+            if (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE || this.perspectiveSelectMode) {
                 this.startMarqueeSelection(event);
             }
         }
