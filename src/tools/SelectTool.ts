@@ -295,8 +295,11 @@ export class SelectTool extends BaseTool implements Tool {
              this.objectManager.selectObject(target);
         } else {
             // 5. Clicked on empty space - Start marquee selection (only in 2D views, or perspective when in select mode)
-            // In perspective orbit mode, let OrbitControls handle the drag for camera rotation
-            if (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE || this.perspectiveSelectMode) {
+            // In perspective orbit mode, let OrbitControls handle the drag for camera rotation.
+            // For touch events, skip marquee entirely so that OrbitControls can track both touch
+            // pointers from the start – this is required for smooth 2-finger pan and pinch-zoom.
+            const isTouch = event.originalEvent.pointerType === 'touch';
+            if (!isTouch && (this.viewManager.getActiveView() !== ViewType.PERSPECTIVE || this.perspectiveSelectMode)) {
                 this.startMarqueeSelection(event);
             }
         }
