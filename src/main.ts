@@ -62,12 +62,12 @@ const goFullscreen = () => {
         }
     }
     // Clean up all listeners once triggered
-    ['click', 'mousedown', 'keydown', 'touchstart'].forEach(type => {
-        document.removeEventListener(type, goFullscreen);
-    });
+    // Removed the removal of listeners here as 'once: true' handles it.
+    // If this needs to be re-triggerable, this removal logic might be needed.
 };
 
-['click', 'mousedown', 'keydown', 'touchstart'].forEach(type => {
+// Trigger fullscreen on common interaction events, including touch events reliable on mobile
+['click', 'mousedown', 'keydown', 'touchstart', 'touchend', 'pointerup'].forEach(type => {
     document.addEventListener(type, goFullscreen, { once: true });
 });
 
