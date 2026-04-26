@@ -46,10 +46,19 @@ export class SelectTool extends BaseTool implements Tool {
     private dragStartScreen: { x: number; y: number } = { x: 0, y: 0 }; // Screen coordinates for div
     private perspectiveSelectMode: boolean = false;
 
+    private activeToolId: string | null = null; // Add this line
+
     constructor(eventBus: EventBus, viewManager: ViewManager, objectManager: ObjectManager, machineBrushInstance: BrushRenderer) {
         super(eventBus, objectManager);
         this.viewManager = viewManager;
         this.machineBrush = machineBrushInstance;
+
+        // ... existing code ...
+
+        this.eventBus.on('tool-selected', (id: string) => {
+            this.activeToolId = id;
+        });
+
 
         // Debug helper
         (window as any).debugScene = () => {
@@ -230,11 +239,14 @@ export class SelectTool extends BaseTool implements Tool {
         if (!cam) return;
         this.raycaster.setFromCamera(event.pointer, cam);
 
-        // 1. Check for Machine Brush first
-        const machineBrushHit = this.raycaster.intersectObject(this.machineBrush.group, true);
-        if (machineBrushHit.length > 0) {
-            this.eventBus.emit('open-brush-properties', null);
-            return; 
+        // 1. Check for Machine Brush first (only if brush_create tool is active)
+        if (this.activeToolId === 'brush_create') {
+            console.log("SelectTool: Machine Brush Group visible status:", this.machineBrush.group.visible);
+            const machineBrushHit = this.raycaster.intersectObject(this.machineBrush.group, true);
+            if (machineBrushHit.length > 0) {
+                this.eventBus.emit('open-brush-properties', null);
+                return; 
+            }
         }
         
         // --- New, robust selection logic ---
